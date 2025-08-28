@@ -1,0 +1,18 @@
+timeline,activity,beginner_steps,advanced_steps,hover_text,completed
+T-5 days,Order Fish,"Order sushi-grade fish (e.g., tuna, salmon) from a trusted supplier (e.g., H-Mart, local fish market).","Select specific cuts (e.g., hamachi, kanpachi) and confirm delivery date.",,False
+T-3 days,Ingredient Shopping,"Buy ingredients (e.g., rice, seaweed, vegetables) using a checklist.","Source specialty items (e.g., shiso leaves, tobiko) from H-Mart or Asian markets.",,False
+T-3 days,Purchase and Ripen Avocados,Buy firm avocados and place in a paper bag to ripen.,Select Hass avocados; check ripeness daily.,,False
+T-1 day,Receive and Store Fish,Inspect fish for freshness; remove moisture.,"Clean, fillet, and portion fish; store on ice in airtight containers.",,False
+T-1 day,Prepare Soy Sauce Reduction (Nikiri),"Mix soy sauce, mirin, and sake; simmer until thickened.",Adjust ratios for flavor; strain for clarity.,,False
+T-1 day,Make Spicy Mayo Sauce,"Mix mayonnaise, sriracha, and sesame oil .",Add lime juice or chili oil for depth.,,False
+T-4 hours,Sharpen Knives,Use a sharpening stone to hone sushi knife.,Soak whetstone for 20 min; sharpen to 15 angle.,,False
+T-3 hours,Prepare Vegetables,"Slice cucumber, green onion, and other vegetables.","Create decorative cuts (e.g., daikon spirals, cucumber fans).",,False
+T-2 hours,Wash and Soak Sushi Rice,Rinse rice until water runs clear; soak for 20 min.,"Use short-grain sushi rice (e.g., Nishiki); measure precisely.",,False
+T-1.5 hours,Cook Sushi Rice,Cook rice in a rice cooker with a 1:1 water ratio.,Steam rice; avoid overcooking for ideal texture.,,False
+T-1.5 hours,Prepare Rice Vinegar Seasoning,"Mix rice vinegar, sugar, and salt; heat gently to dissolve.",Adjust seasoning for balance; cool before use.,,False
+T-1 hour,Prepare Wasabi,Mix wasabi powder with water to form a paste.,Use fresh wasabi root if available; grate finely.,,False
+T-30 min,Set Up Cutting Station,"Arrange knives, cutting board, and damp towel.",Include bowls of water for rinsing hands/knife.,,False
+T-30 min,Warm Sake,Heat sake in a tokkuri to 110-120¡F.,Offer both warm and chilled sake options.,,False
+T-30 min,Prepare Bamboo Mats,Wrap bamboo mats in plastic wrap for easy cleanup.,Ensure mats are clean and tightly woven.,,False
+T-15 min,Final Setup and Garnishes,"Arrange serving platters, chopsticks, and garnishes (e.g., pickled ginger).","Plate garnishes artistically (e.g., shiso leaves, wasabi dots).",,False
+T-0,Start Cooking,"Roll maki, shape nigiri, or prepare sashimi.",Experiment with specialty rolls or temaki.,,False

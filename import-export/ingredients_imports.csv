@@ -1,0 +1,46 @@
+category,name,shopping_cart_name,store,cost,quantity,uses_per_purchase,unit_cost,brand
+Dairy,Mozzarella Cheese,Fresh Mozzarella,H-Mart,5.99,16 oz,10,0.6,Galbani
+Dairy,Cream Cheese,Cream Cheese,H-Mart,4.49,8 oz,5,0.9,Philadelphia
+Dairy,Japanese Mayo,Kewpie Mayonnaise,H-Mart,7.99,17.6 oz,3,2.66,Kewpie
+Dairy,Egg,Large Eggs (Dozen),Whole Foods,4.99,12 eggs,12,0.42,Vital Farms
+Meat & Fish,Tobiko,Tobiko (Flying Fish Roe),H-Mart,9.99,4 oz,10,1,Caviart
+Meat & Fish,Kani (Crab),Imitation Crab Sticks,H-Mart,6.49,16 oz,5,1.3,Trans-Ocean
+Meat & Fish,Scallops,Sea Scallops,Whole Foods,29.99,16 oz,2,15,Whole Foods Market
+Meat & Fish,Tempura Shrimp,Tempura Shrimp,Whole Foods,12.99,8 oz,5,2.6,Whole Foods Market
+Meat & Fish,Yellowtail,Yellowtail Fillet (Hamachi),H-Mart,24.99,16 oz,20,1.25,H-Mart Fresh
+Meat & Fish,Kampachi,Kanpachi Fillet (Amberjack),H-Mart,26.99,16 oz,20,1.35,H-Mart Fresh
+Meat & Fish,Chicken,Boneless Chicken Breast,Whole Foods,9.99,16 oz,2,5,Bell & Evans
+Meat & Fish,Tuna,Fresh Tuna Fillet,H-Mart,65,16 oz,20,3.25,H-Mart Fresh
+Meat & Fish,Salmon,Fresh Salmon Fillet,H-Mart,50,16 oz,20,2.5,H-Mart Fresh
+Other (Rolls),Maki Rolls,Vegetable Maki Rolls,H-Mart,6.99,8 pieces,10,0.7,H-Mart Sushi
+Other (Rolls),Rice,Sushi Rice,H-Mart,8.99,5 lb,5,1.8,Nishiki
+Other (Rolls),Tempura Flakes,Tempura Flakes (Tenkasu),H-Mart,3.49,8 oz,50,0.07,Shirakiku
+Other (Sauce),Gochujang Pepper Paste,Gochujang Paste,H-Mart,5.99,17.6 oz,10,0.6,Chung Jung One
+Other (Sauce),Hot Pepper Powder,Gochugaru (Korean Red Pepper),H-Mart,6.99,8 oz,25,0.28,TaeKyung
+Other (Sauce),Sesame Oil,Toasted Sesame Oil,H-Mart,6.49,16 oz,25,0.26,Kadoya
+Other (Sauce),Tempura Batter,Tempura Batter Mix,H-Mart,3.29,10 oz,5,0.66,Kikkoman
+Other (Sauce),Wasabi,Wasabi Paste,H-Mart,3.99,1.5 oz,25,0.16,S&B
+Other (Sauce),Eel Sauce,Eel Sauce (Unagi Sauce),H-Mart,4.99,8.3 oz,20,0.25,Kikkoman
+Other (Sauce),Sweet Soy Sauce,Sweet Soy Sauce (Kecap Manis),H-Mart,5.49,20.2 oz,3,1.83,ABC
+Other (Sauce),Soy Sauce,Low-Sodium Soy Sauce,H-Mart,5.99,33.8 oz,20,0.3,Kikkoman
+Other (Sauce),Ponzu Sauce,Ponzu Sauce,H-Mart,4.99,12 oz,10,0.5,Mizkan
+Other (Sauce),Dashi,Dashi Powder,H-Mart,5.49,2.11 oz,25,0.22,Ajinomoto
+Other (Sauce),Mirin,Hon Mirin,H-Mart,6.99,17 oz,50,0.14,Takara
+Other (Sauce),Sake,Cooking Sake,H-Mart,8.99,25.4 oz,50,0.18,Sho Chiku Bai
+Other (Sauce),Kambu (Kelp),Kombu (Dried Kelp),H-Mart,5.99,2 oz,5,1.2,Wel-Pac
+Other (Sauce),Canola Oil,Canola Oil,Whole Foods,6.99,32 oz,3,2.33,365 by Whole Foods
+Other (Sauce),Truffle Oil,White Truffle Oil,Whole Foods,19.99,8.45 oz,50,0.4,La Tourangelle
+Vegetables,Pickled Ginger,Pickled Ginger (Gari),H-Mart,2.99,8 oz,5,0.6,Wel-Pac
+Vegetables,Pickled Daikon,Pickled Daikon Radish,H-Mart,3.49,8 oz,5,0.7,Shirakiku
+Vegetables,Shiso Leaves,Shiso Leaves (Perilla),H-Mart,3.99,1 oz,3,1.33,H-Mart Fresh
+Vegetables,Chives,Fresh Chives,Whole Foods,2.49,0.5 oz,10,0.25,Whole Foods Market
+Vegetables,Sweet Potato,Sweet Potato,Whole Foods,1.99,16 oz,4,0.5,Whole Foods Market
+Vegetables,Cucumber,English Cucumber,Whole Foods,2.49,1 unit (12 oz),3,0.83,Whole Foods Market
+Vegetables,Lime,Lime,Whole Foods,0.99,1 unit,3,0.33,Whole Foods Market
+Vegetables,Lemon,Lemon,Whole Foods,0.99,1 unit,1,0.99,Whole Foods Market
+Vegetables,Green Onion,Green Onion,Whole Foods,1.49,1 bunch,5,0.3,Whole Foods Market
+Vegetables,Asparagus,Asparagus,Whole Foods,4.99,1 lb,10,0.5,Whole Foods Market
+Vegetables,Avocado,Hass Avocado,Whole Foods,2.49,1 unit,2,1.25,Whole Foods Market
+Vegetables,Jalapeno,Jalapeno Pepper,Whole Foods,0.99,1 unit,1,0.99,Whole Foods Market
+Vegetables,Minced Garlic,Minced Garlic,Whole Foods,3.49,4.5 oz,15,0.23,Spice World
+Vegetables,Cilantro,Fresh Cilantro,Whole Foods,1.99,1 bunch,10,0.2,Whole Foods Market

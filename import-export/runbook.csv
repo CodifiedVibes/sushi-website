@@ -1,0 +1,20 @@
+timeline,activity,beginner_steps,advanced_steps,hover_text,completed
+T-5,Order Fish,x,x,,False
+T-3,Ingrediant Shopping,x,x,,False
+T-3,Print menu,,x,,False
+T-3,Avocados,x,x,,False
+T-1,Fish arrived,x,x,Clean and store fish; make sure dry,False
+T-1,Soy sauce reduction (nikiri),,x,,False
+T-1,Spicy mayo sauce,,x,,False
+4 hr,Sharpen knifes,,x,soak wet stone 20 min.,False
+3 hr,"Veg - Cut cucumber, green onion",x,x,,False
+3 hr,"Veg - Cut raddish, daikon, cucumber designs",,x,,False
+2 hr,Wash rice,x,x,soak for 20 min.,False
+1.5 hr,Start rice,x,x,,False
+1.5 hr,Make rice vinegar,x,x,,False
+1 hr,Make wasabi,x,x,,False
+1 hr,Cut vegetables,x,x,,False
+30 min,Setup cutting station,x,x,,False
+30 min,Get saki warmed up,x,x,,False
+30 min,Bamboo wraps,x,x,,False
+t-0,Ready to Cook,,,,False
