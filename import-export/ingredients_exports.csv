@@ -1,0 +1,46 @@
+category,name,store,cost,quantity,uses_per_purchase,unit_cost
+Dairy,Cream Cheese,H-Mart,4.49,8 oz,5,0.9
+Dairy,Egg,Whole Foods,4.99,12 eggs,12,0.42
+Dairy,Japanese Mayo,H-Mart,7.99,17.6 oz,3,2.66
+Dairy,Mozzarella Cheese,H-Mart,5.99,16 oz,10,0.6
+Meat & Fish,Chicken,Whole Foods,9.99,16 oz,2,5.0
+Meat & Fish,Kampachi,H-Mart,26.99,16 oz,20,1.35
+Meat & Fish,Kani (Crab),H-Mart,6.49,16 oz,5,1.3
+Meat & Fish,Salmon,H-Mart,50.0,16 oz,20,2.5
+Meat & Fish,Scallops,Whole Foods,29.99,16 oz,2,15.0
+Meat & Fish,Tempura Shrimp,Whole Foods,12.99,8 oz,5,2.6
+Meat & Fish,Tobiko,H-Mart,9.99,4 oz,10,1.0
+Meat & Fish,Tuna,H-Mart,65.0,16 oz,20,3.25
+Meat & Fish,Yellowtail,H-Mart,24.99,16 oz,20,1.25
+Other (Rolls),Maki Rolls,H-Mart,6.99,8 pieces,10,0.7
+Other (Rolls),Rice,H-Mart,8.99,5 lb,5,1.8
+Other (Rolls),Tempura Flakes,H-Mart,3.49,8 oz,50,0.07
+Other (Sauce),Canola Oil,Whole Foods,6.99,32 oz,3,2.33
+Other (Sauce),Dashi,H-Mart,5.49,2.11 oz,25,0.22
+Other (Sauce),Eel Sauce,H-Mart,4.99,8.3 oz,20,0.25
+Other (Sauce),Gochujang Pepper Paste,H-Mart,5.99,17.6 oz,10,0.6
+Other (Sauce),Hot Pepper Powder,H-Mart,6.99,8 oz,25,0.28
+Other (Sauce),Kambu (Kelp),H-Mart,5.99,2 oz,5,1.2
+Other (Sauce),Mirin,H-Mart,6.99,17 oz,50,0.14
+Other (Sauce),Ponzu Sauce,H-Mart,4.99,12 oz,10,0.5
+Other (Sauce),Sake,H-Mart,8.99,25.4 oz,50,0.18
+Other (Sauce),Sesame Oil,H-Mart,6.49,16 oz,25,0.26
+Other (Sauce),Soy Sauce,H-Mart,5.99,33.8 oz,20,0.3
+Other (Sauce),Sweet Soy Sauce,H-Mart,5.49,20.2 oz,3,1.83
+Other (Sauce),Tempura Batter,H-Mart,3.29,10 oz,5,0.66
+Other (Sauce),Truffle Oil,Whole Foods,19.99,8.45 oz,50,0.4
+Other (Sauce),Wasabi,H-Mart,3.99,1.5 oz,25,0.16
+Vegetables,Asparagus,Whole Foods,4.99,1 lb,10,0.5
+Vegetables,Avocado,Whole Foods,2.49,1 unit,2,1.25
+Vegetables,Chives,Whole Foods,2.49,0.5 oz,10,0.25
+Vegetables,Cilantro,Whole Foods,1.99,1 bunch,10,0.2
+Vegetables,Cucumber,Whole Foods,2.49,1 unit (12 oz),3,0.83
+Vegetables,Green Onion,Whole Foods,1.49,1 bunch,5,0.3
+Vegetables,Jalapeno,Whole Foods,0.99,1 unit,1,0.99
+Vegetables,Lemon,Whole Foods,0.99,1 unit,1,0.99
+Vegetables,Lime,Whole Foods,0.99,1 unit,3,0.33
+Vegetables,Minced Garlic,Whole Foods,3.49,4.5 oz,15,0.23
+Vegetables,Pickled Daikon,H-Mart,3.49,8 oz,5,0.7
+Vegetables,Pickled Ginger,H-Mart,2.99,8 oz,5,0.6
+Vegetables,Shiso Leaves,H-Mart,3.99,1 oz,3,1.33
+Vegetables,Sweet Potato,Whole Foods,1.99,16 oz,4,0.5

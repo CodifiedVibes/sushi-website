@@ -71,7 +71,7 @@ sushi-website/
 ### Export Current Data (for editing)
 ```bash
 cd sushi-website
-python3 export_json_to_csv.py
+python3 export_database_to_csv.py
 ```
 This creates CSV files in the `import-export/` folder:
 - `import-export/menu_exports.csv`
@@ -89,31 +89,36 @@ This creates CSV files in the `import-export/` folder:
 ### Import Edited Data
 ```bash
 cd sushi-website
-python3 convert_imports_to_json.py
+python3 convert_imports_to_database.py
 ```
-This reads the `_imports` files and updates `sushi_data.json`.
+This reads the `_imports` files and updates the SQLite database directly.
 
 #### Selective Import Options
 You can import only specific types of data using command-line options:
 
 - Import only the menu:
   ```bash
-  python3 convert_imports_to_json.py --menu
+  python3 convert_imports_to_database.py --menu
   ```
 - Import only the ingredients:
   ```bash
-  python3 convert_imports_to_json.py --ingredients
+  python3 convert_imports_to_database.py --ingredients
   ```
 - Import only the runbook:
   ```bash
-  python3 convert_imports_to_json.py --runbook
+  python3 convert_imports_to_database.py --runbook
   ```
 - Import menu and runbook only:
   ```bash
-  python3 convert_imports_to_json.py --menu --runbook
+  python3 convert_imports_to_database.py --menu --runbook
   ```
 
 **Note**: If you run the script with **no arguments**, it will import all three files (menu, ingredients, and runbook).
+
+### Legacy JSON Workflow (Deprecated)
+The old JSON-based workflow is still available but not recommended:
+- `export_json_to_csv.py` - Export from legacy JSON
+- `convert_imports_to_json.py` - Import to legacy JSON
 
 ## 🎨 Features
 
