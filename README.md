@@ -6,10 +6,10 @@ A modern React-based sushi restaurant website with menu management, shopping car
 
 ```
 sushi-website/
-├── app.js                # Main React application (836es)
+├── app.js                # Main React application (1070 lines)
 ├── index.html            # HTML entry point
 ├── data/
-│   └── sushi_data.json   # Main data file (auto-generated)
+│   └── sushi_data.json   # Legacy data file (now served via API)
 ├── import-export/        # CSV files for data editing
 │   ├── menu_imports.csv      # Edit menu items here
 │   ├── ingredients_imports.csv # Edit ingredients and costs here
@@ -20,11 +20,40 @@ sushi-website/
 ├── pictures/             # Menu item images
 ├── export_json_to_csv.py # Export JSON to CSV for editing
 ├── convert_imports_to_json.py # Import CSV back to JSON
+├── database_schema.sql   # SQLite database schema
+├── migrate_to_sqlite.py  # Migration script from JSON to SQLite
+├── api_server.py         # Flask API server
+├── requirements.txt      # Python dependencies
+├── sushi.db             # SQLite database
 └── README.md             # This file
 ```
 
 ## 🚀 Running the Website
 
+### Option 1: Database Mode (Recommended)
+1. **Install Python dependencies:**
+   ```bash
+   cd sushi-website
+   pip3 install -r requirements.txt
+   ```
+
+2. **Start the API server:**
+   ```bash
+   python3 api_server.py
+   ```
+   The API will be available at `http://localhost:5001`
+
+3. **Start the web server:**
+   ```bash
+   python3 -m http.server 8000
+   ```
+
+4. **Open in browser:**
+   ```
+   http://localhost:8000
+   ```
+
+### Option 2: Legacy JSON Mode
 1. **Start the server:**
    ```bash
    cd sushi-website
@@ -35,6 +64,7 @@ sushi-website/
    ```
    http://localhost:8000
    ```
+   Note: This mode uses the local `sushi_data.json` file instead of the database.
 
 ## 📊 Data Management Workflow
 
@@ -130,21 +160,26 @@ Each runbook item includes:
 ## 🔧 Technical Stack
 
 - **Frontend**: React (via CDN), Tailwind CSS, Vanilla JavaScript
-- **Backend**: Python for data processing
-- **Data Format**: JSON for runtime, CSV for editing
+- **Backend**: Flask API server, Python for data processing
+- **Database**: SQLite with relational schema
+- **Data Format**: JSON for runtime, CSV for editing, SQL for database
 - **Server**: Python HTTP server (no build process required)
 
 ## 🚀 Quick Start
 
 1. Clone or download the project
 2. Navigate to the `sushi-website` directory
-3. Run `python3 -m http.server 8000`
-4. Open `http://localhost:8000` in your browser
-5. Start browsing the menu and adding items to your cart!
+3. Install dependencies: `pip3 install -r requirements.txt`
+4. Start the API server: `python3 api_server.py` (runs on port 5001)
+5. Start the web server: `python3 -m http.server 8000`
+6. Open `http://localhost:8000` in your browser
+7. Start browsing the menu and adding items to your cart!
 
 ## 📝 Development Notes
 
 - All data editing is done through CSV files in the `import-export/` folder
 - The main `sushi_data.json` file is auto-generated and should not be edited directly
 - The website automatically loads the latest data on page refresh
-- No build process or compilation required - just edit files and refresh! 
+- No build process or compilation required - just edit files and refresh!
+- The database is automatically populated from the JSON data during migration
+- API endpoints are available at `http://localhost:5001/api/` for programmatic access 

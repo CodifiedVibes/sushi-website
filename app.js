@@ -171,16 +171,22 @@ function App() {
   const [menuFilter, setMenuFilter] = useState('all'); // all, top-ranked, salmon, tuna, veggie
 
   useEffect(() => {
-    fetch('data/sushi_data.json')
-      .then(res => res.json())
-      .then(data => {
-        setMenu(data.menu || {});
-        setIngredients(data.ingredients || {});
-        setRunbook(data.runbook || []);
+    // Fetch data from API endpoints
+    Promise.all([
+      fetch('http://localhost:5001/api/menu'),
+      fetch('http://localhost:5001/api/ingredients'),
+      fetch('http://localhost:5001/api/runbook')
+    ])
+      .then(responses => Promise.all(responses.map(res => res.json())))
+      .then(([menuData, ingredientsData, runbookData]) => {
+        setMenu(menuData || {});
+        setIngredients(ingredientsData || {});
+        setRunbook(runbookData || []);
         setLoading(false);
       })
       .catch(err => {
-        setError('Failed to load menu data.');
+        console.error('API Error:', err);
+        setError('Failed to load menu data from API.');
         setLoading(false);
       });
   }, []);
