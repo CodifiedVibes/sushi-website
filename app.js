@@ -11,6 +11,7 @@ const NAV_OPTIONS = [
   { label: 'Menu', key: 'menu' },
   { label: 'Runbook', key: 'runbook' },
   { label: 'Shopping Items', key: 'shopping_items' },
+  { label: 'Shopping Ingredients', key: 'shopping_ingredients' },
 ];
 
 const COLORS = {
@@ -855,20 +856,145 @@ function App() {
               </div>
             </section>
           )}
+          {activeNav === 'shopping_ingredients' && (
+            <section id="shopping-ingredients" className="w-full">
+              <div className="w-full max-w-4xl">
+                <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Shopping Ingredients List</h2>
+                {cart.length === 0 ? (
+                  <div className="text-[#b0b8c1] text-center py-8">
+                    <div className="text-lg mb-2">No items in your cart yet</div>
+                    <div className="text-sm">Add some menu items to generate your shopping list</div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Export buttons */}
+                    <div className="flex flex-wrap gap-3 mb-6">
+                      <button
+                        className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#00D4AA] border border-[#00D4AA] transition"
+                        onClick={() => {
+                          const { grouped, sortedCats } = getCartIngredientsSummary(cart, ingredients);
+                          const lines = [];
+                          lines.push('🛒 SHOPPING LIST');
+                          lines.push(`Generated: ${new Date().toLocaleDateString()}`);
+                          lines.push('');
+                          sortedCats.forEach(cat => {
+                            lines.push(`${cat.toUpperCase()}:`);
+                            grouped[cat].forEach(ing => {
+                              lines.push(`• ${ing.name}${ing.store ? ` (${ing.store})` : ''}`);
+                            });
+                            lines.push('');
+                          });
+                          const plainText = lines.join('\n');
+                          navigator.clipboard.writeText(plainText);
+                          alert('Shopping list copied to clipboard!');
+                        }}
+                      >
+                        📋 Copy to Clipboard
+                      </button>
+                      <button
+                        className="bg-[#9945FF] text-white px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#9945FF] border border-[#9945FF] transition"
+                        onClick={() => window.print()}
+                      >
+                        🖨️ Print List
+                      </button>
+                      <button
+                        className="bg-[#3B82F6] text-white px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#3B82F6] border border-[#3B82F6] transition"
+                        onClick={() => {
+                          const { grouped, sortedCats } = getCartIngredientsSummary(cart, ingredients);
+                          const lines = [];
+                          lines.push('SHOPPING LIST');
+                          lines.push(`Generated: ${new Date().toLocaleDateString()}`);
+                          lines.push('');
+                          sortedCats.forEach(cat => {
+                            lines.push(`${cat.toUpperCase()}:`);
+                            grouped[cat].forEach(ing => {
+                              lines.push(`- ${ing.name}${ing.store ? ` (${ing.store})` : ''}`);
+                            });
+                            lines.push('');
+                          });
+                          const plainText = lines.join('\n');
+                          const blob = new Blob([plainText], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `shopping-list-${new Date().toISOString().split('T')[0]}.txt`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                      >
+                        📥 Download .txt
+                      </button>
+                    </div>
+                    
+                    {/* Ingredients by category */}
+                    {(() => {
+                      const { grouped, sortedCats } = getCartIngredientsSummary(cart, ingredients);
+                      return (
+                        <div className="space-y-6">
+                          {sortedCats.map(cat => (
+                            <div key={cat} className="bg-[#2a2a2a] rounded-[12px] p-6 shadow">
+                              <h3 className="text-xl font-bold mb-4 text-[#00D4AA] flex items-center">
+                                <span className="mr-2">
+                                  {cat === 'Fish' ? '🐟' : 
+                                   cat === 'Dairy' ? '🥛' : 
+                                   cat === 'Vegetables' ? '🥬' : '📦'}
+                                </span>
+                                {cat}
+                              </h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {grouped[cat].map((ing, idx) => (
+                                  <div key={idx} className="bg-[#1a1a1a] rounded-[8px] p-3 flex items-center justify-between">
+                                    <div>
+                                      <div className="font-medium text-white">{ing.name}</div>
+                                      {ing.store && (
+                                        <div className="text-sm text-[#b0b8c1]">{ing.store}</div>
+                                      )}
+                                    </div>
+                                    <div className="text-xs text-[#00D4AA] bg-[#00D4AA20] px-2 py-1 rounded">
+                                      {ing.category || 'Other'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+                        </div>
+                      );
+                    })()}
+                    
+                    {/* Summary stats */}
+                    <div className="bg-[#2a2a2a] rounded-[12px] p-4 shadow">
+                      <div className="text-center">
+                        <div className="text-lg font-semibold text-[#00D4AA] mb-2">Summary</div>
+                        <div className="text-sm text-[#b0b8c1]">
+                          {(() => {
+                            const { grouped } = getCartIngredientsSummary(cart, ingredients);
+                            const totalItems = Object.values(grouped).flat().length;
+                            const categories = Object.keys(grouped).length;
+                            return `${totalItems} items across ${categories} categories`;
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
           {activeNav === 'cart' && (
             <section id="cart" className="w-full">
-              <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Shopping Cart</h2>
+              <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Menu</h2>
               {cart.length === 0 ? (
-                <div className="text-[#b0b8c1]">Your cart is empty.</div>
+                <div className="text-[#b0b8c1]">No items selected yet.</div>
               ) : (
                 <div className="space-y-4">
                   <table className="min-w-full text-sm bg-[#2a2a2a] rounded-[12px] shadow">
                     <thead>
                       <tr>
-                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Item</th>
                         <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Category</th>
+                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Item</th>
                         <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Quantity</th>
-                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Price</th>
+                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Description</th>
                         <th className="px-4 py-2"></th>
                       </tr>
                     </thead>
@@ -899,10 +1025,10 @@ function App() {
                         
                         return sortedCart.map((item, idx) => (
                           <tr key={idx} className="border-b border-[#1a1a1a]">
-                            <td className="px-4 py-2 font-semibold text-white">{item.name}</td>
-                            <td className="px-4 py-2 text-[#b0b8c1]">{item.category}</td>
+                            <td className="px-4 py-2 text-[#b0b8c1] font-medium">{item.category}</td>
+                            <td className="px-4 py-2 font-semibold text-white whitespace-nowrap">{item.name}</td>
                             <td className="px-4 py-2 text-white">{item.quantity}</td>
-                            <td className="px-4 py-2 text-white">{item.price ? `$${(item.price * item.quantity).toFixed(2)}` : '-'}</td>
+                            <td className="px-4 py-2 text-[#b0b8c1] text-sm">{item.description || getDescription(item)}</td>
                             <td className="px-4 py-2">
                               <button className="text-xs text-[#b0b8c1] hover:text-red-400" onClick={() => removeFromCart(item)}>Remove</button>
                             </td>
@@ -911,56 +1037,18 @@ function App() {
                       })()}
                     </tbody>
                   </table>
-                  <div className="flex justify-between items-center mt-4">
-                    <div className="text-lg font-bold text-[#00D4AA]">Total: {cart.reduce((sum, item) => sum + (item.price ? item.price * item.quantity : 0), 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</div>
+                  <div className="flex justify-end items-center mt-4">
                     <button
                       className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#00D4AA] border border-[#00D4AA] transition"
                       onClick={() => window.print()}
                     >
-                      Print / Export
+                      Print / Share Menu
                     </button>
                   </div>
-                  {/* Ingredients summary section */}
-                  {(() => {
-                    const { grouped, sortedCats } = getCartIngredientsSummary(cart, ingredients);
-                    const lines = [];
-                    sortedCats.forEach(cat => {
-                      lines.push(`${cat}:`);
-                      grouped[cat].forEach(ing => {
-                        lines.push(`- ${ing.name}${ing.store ? ` (${ing.store})` : ''}`);
-                      });
-                      lines.push('');
-                    });
-                    const plainText = lines.join('\n');
-                    return (
-                      <div className="mt-8">
-                        <h3 className="text-xl font-semibold mb-2 text-[#00D4AA]">Shopping Ingredients</h3>
-                        <div className="mb-2">
-                          <button
-                            className="bg-[#2a2a2a] text-[#00D4AA] px-3 py-1 rounded-[8px] font-medium shadow hover:bg-[#00D4AA] hover:text-[#1a1a1a] border border-[#00D4AA] transition mb-2"
-                            onClick={() => { navigator.clipboard.writeText(plainText); }}
-                          >
-                            Copy Ingredients List
-                          </button>
-                        </div>
-                        <div className="text-white text-sm bg-[#232946] rounded-[12px] p-4 shadow max-w-2xl">
-                          {sortedCats.map(cat => (
-                            <div key={cat} className="mb-4">
-                              <div className="font-bold text-[#00D4AA] mb-1">{cat}:</div>
-                              <ul className="list-disc list-inside ml-4">
-                                {grouped[cat].map(ing => (
-                                  <li key={ing.name + ing.store} className="text-white">{ing.name}{ing.store ? ` (${ing.store})` : ''}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-            </section>
+
+            </div>
+          )}
+        </section>
           )}
         </div>
       </main>
