@@ -178,18 +178,22 @@ def import_runbook_from_csv(db_path, csv_file):
             runbook_items_imported = 0
             
             for row in reader:
+                # Convert "x" values to boolean for has_beginner and has_advanced
+                has_beginner = row.get('beginner_steps', '').strip() == 'x'
+                has_advanced = row.get('advanced_steps', '').strip() == 'x'
+                
                 cursor.execute("""
                     INSERT INTO runbook_items (timeline, activity, beginner_steps, advanced_steps, estimated_duration, notes, has_beginner, has_advanced)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     row.get('timeline', '').strip(),
                     row.get('activity', '').strip(),
-                    row.get('beginner_steps', '').strip(),
-                    row.get('advanced_steps', '').strip(),
-                    row.get('estimated_duration', '').strip(),
-                    row.get('notes', '').strip(),
-                    row.get('has_beginner', 'false').lower() == 'true',
-                    row.get('has_advanced', 'false').lower() == 'true'
+                    row.get('Beginner Steps', '').strip(),
+                    row.get('Advanced Steps', '').strip(),
+                    row.get('Estimated Duration', '').strip(),
+                    row.get('Notes', '').strip(),
+                    has_beginner,
+                    has_advanced
                 ))
                 runbook_items_imported += 1
         
@@ -226,11 +230,11 @@ def main():
     # Determine what to import
     import_all = not (args.menu or args.ingredients or args.runbook)
     
-    if import_all or args.menu:
-        import_menu_from_csv(db_file, import_export_dir / 'menu_imports.csv')
-    
     if import_all or args.ingredients:
         import_ingredients_from_csv(db_file, import_export_dir / 'ingredients_imports.csv')
+    
+    if import_all or args.menu:
+        import_menu_from_csv(db_file, import_export_dir / 'menu_imports.csv')
     
     if import_all or args.runbook:
         import_runbook_from_csv(db_file, import_export_dir / 'runbook_imports.csv')

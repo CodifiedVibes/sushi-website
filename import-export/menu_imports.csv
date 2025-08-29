@@ -1,25 +1,25 @@
-category,name,ingredients_on_top,ingredients_on_top,description
-Maki Rolls,California Roll,Crab; Cucumber; Avocado,,"Crab, Cucumber and Avocado"
+category,name,ingredients_inside,ingredients_on_top,description
+Maki Rolls,California Roll,Kani (Crab); Cucumber; Avocado,,"Kani (Crab), Cucumber and Avocado"
 Maki Rolls,Philly Roll,Salmon; Cucumber; Cream Cheese,,"Salmon, Cucumber and Cream Cheese"
 Maki Rolls,Shrimp Tempura Roll,Shrimp Tempura; Cucumber; Avocado,Eel Sauce,"Shrimp Tempura, Cucumber, Avocado topped with Eel Sauce"
-Maki Rolls,Spicy Cali Roll,Crab; Cucumber; Avocado,Spicy Mayo,"Crab, Cucumber, Avocado topped with Spicy Mayo"
+Maki Rolls,Spicy Cali Roll,Kani (Crab); Cucumber; Avocado,Spicy Mayo,"Kani (Crab), Cucumber, Avocado topped with Spicy Mayo"
 Maki Rolls,Spicy Tuna Roll,Tuna; Cucumber; Spicy Mayo,,"Tuna, Cucumber and Spicy Mayo"
-Maki Rolls,Sweet Potato Roll,Sweet Potato Tempura; Cucumber; Avocado,Eel Sauce,"Sweet Potato Tempura, Cucumber, Avocado topped with Eel Sauce"
+Maki Rolls,Sweet Potato Roll,Sweet Potato; Cucumber; Avocado,Eel Sauce,"Sweet Potato, Cucumber, Avocado topped with Eel Sauce"
 Speciality Rolls,Flying Tiger,Salmon; Asparagus,Avocado; Eel Sauce; Tobiko,"Salmon, Asparagus topped with Avocado, Eel Sauce, Tobiko"
 Speciality Rolls,Windy City Roll,Shrimp Tempura; Cucumber; Avocado,Salmon; Tuna; Spicy Mayo; Eel Sauce,"Shrimp Tempura, Cucumber, Avocado topped with Salmon, Tuna, Spicy Mayo and Eel Sauce"
-Speciality Rolls,Alaskan Volcano,Salmon; Avocado; Cucumber,Crab Salad; Tempura Flakes; Tobiko,"Salmon, Avocado, Cucumber topped with Crab Salad, Tempura Flakes and Tobiko"
-Speciality Rolls,Spicy Scallop Roll,Crab; Avocado,Spicy Scallops; Mozzarella Cheese,"Crab, Cucumber, Avocado topped with Spicy Scallops and Mozzarella Cheese"
+Speciality Rolls,Alaskan Volcano,Salmon; Avocado; Cucumber,Kani (Crab); Tempura Flakes; Tobiko,"Salmon, Avocado, Cucumber topped with Kani (Crab), Tempura Flakes and Tobiko"
+Speciality Rolls,Spicy Scallop Roll,Kani (Crab); Avocado,Scallops; Mozzarella Cheese,"Kani (Crab), Avocado topped with Scallops and Mozzarella Cheese"
 Speciality Rolls,Pacific Roll,Akami Tuna; oToro; Avocado; Asparagus; Chives,Akami Tuna,"Akami Tuna, oToro, Avocado, Asparagus, Chives topped with more Tuna"
 Speciality Rolls,Inside Out Rainbow Roll,Tuna; Salmon; Kampachi,Avocado; Tobiko,"Tuna, Salmon, Kampachi topped with Avocado, Tobiko"
 Speciality Rolls,Wells St. Roll,Shrimp Tempura; Avocado,Tuna; Spicy Mayo; Sprouts,"Shrimp Tempura, Avocado topped with Tuna, Spicy Mayo, Sprouts"
-Appetizer,Yellow Tail Jalapeno,Yellow Tail; Yuzu Juice,Minced Garlic; Jalapeno; Cilantro,"Yellow Tail, Yuzu Juice topped with Minced Garlic, Jalapeno, Cilantro"
+Appetizer,Yellow Tail Jalapeno,Yellowtail; Yuzu Juice,Minced Garlic; Jalapeno; Cilantro,"Yellowtail, Yuzu Juice topped with Minced Garlic, Jalapeno, Cilantro"
 Appetizer,Tuna Rice Bites,Tuna; Lime; Green Onion; Tobiko,Avocado; Green Onion; Sweet Soy Sauce,"Tuna, Lime, Green Onion, Tobiko topped with Avocado, Green Onion, Sweet Soy Sauce"
 Appetizer,Salmon Rice Bites,Salmon; Lime; Green Onion; Tobiko,Avocado; Spicy Mayo; Sweet Soy Sauce,"Salmon, Lime, Green Onion and Tobiko topped with Avocado, Spicy Mayo and Sweet Soy Sauce"
-Nigiri,Sake,Salmon,Lemon Zest,Salmon topped with Lemon Zest
-Nigiri,Seared Sake,Salmon,Spicy Mayo; Eel Sauce,Seared Salmon topped with Spicy May and Eel Sauce
-Nigiri,Zuke Sake,Marinade Salmon,Green Onion,Marinade Salmon topped with Green Onion
+Nigiri,Sake,Salmon,Lemon,Salmon topped with Lemon
+Nigiri,Seared Sake,Salmon,Spicy Mayo; Eel Sauce,Seared Salmon topped with Spicy Mayo and Eel Sauce
+Nigiri,Zuke Sake,Salmon,Green Onion,Salmon topped with Green Onion
 Nigiri,Akami,Tuna,,Tuna
-Nigiri,Otoro,Fatty Tuna,,oToro Tuna
-Nigiri,Hamachi,Yellow Tail,,Hamachi
-Nigiri,Kampachi,White Fish,Citrus Yuzu Sauce,Kampachi topped with Citrus Yuzu Sauce
-Nigiri,Scallop,Scallop,Salt Flakes,Scallop topped with Salt Flakes
+Nigiri,Otoro,oToro,,oToro Tuna
+Nigiri,Hamachi,Yellowtail,,Hamachi
+Nigiri,Kampachi,Kampachi,Citrus Yuzu Sauce,Kampachi topped with Citrus Yuzu Sauce
+Nigiri,Scallop,Scallops,Salt Flakes,Scallop topped with Salt Flakes

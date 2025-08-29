@@ -81,19 +81,25 @@ function categorizeIngredients(ingredients) {
 function getCartIngredients(cart, ingredientsMaster) {
   // Build a map of ingredient name -> ingredient object (for category lookup)
   const ingredientMap = {};
-  Object.values(ingredientsMaster).flat().forEach(ing => {
+  // Handle both old flat structure and new categorized structure
+  const allIngredients = Array.isArray(ingredientsMaster) 
+    ? ingredientsMaster 
+    : Object.values(ingredientsMaster).flat();
+  
+  allIngredients.forEach(ing => {
     ingredientMap[ing.name.toLowerCase()] = ing;
   });
+  
   // Gather all ingredients from cart
-  let allIngredients = [];
+  let allCartIngredients = [];
   cart.forEach(item => {
     // Combine inside and on top
     const inside = (item.ingredients_inside || []).map(i => i.trim()).filter(Boolean);
     const onTop = (item.ingredients_on_top || []).map(i => i.trim()).filter(Boolean);
-    allIngredients.push(...inside, ...onTop);
+    allCartIngredients.push(...inside, ...onTop);
   });
   // Deduplicate (case-insensitive)
-  const uniqueNames = Array.from(new Set(allIngredients.map(i => i.toLowerCase())));
+  const uniqueNames = Array.from(new Set(allCartIngredients.map(i => i.toLowerCase())));
   // Map to ingredient objects (with fallback if not found)
   return uniqueNames.map(name => ingredientMap[name] || { name });
 }
@@ -115,9 +121,15 @@ function getMenuItemImage(item) {
 function getCartIngredientsSummary(cart, ingredientsMaster) {
   // Build a map of ingredient name -> { ...ingredient, totalQty }
   const ingredientMap = {};
-  Object.values(ingredientsMaster).flat().forEach(ing => {
+  // Handle both old flat structure and new categorized structure
+  const allIngredients = Array.isArray(ingredientsMaster) 
+    ? ingredientsMaster 
+    : Object.values(ingredientsMaster).flat();
+  
+  allIngredients.forEach(ing => {
     ingredientMap[ing.name.toLowerCase()] = { ...ing, totalQty: 0 };
   });
+  
   // For each cart item, add up ingredient quantities
   cart.forEach(item => {
     const qty = item.quantity || 1;
@@ -298,7 +310,6 @@ function App() {
     { label: 'Store', key: 'store' },
     { label: 'Cost', key: 'cost' },
     { label: 'Quantity', key: 'quantity' },
-    { label: 'Unit Cost', key: 'unit_cost' },
   ];
 
   // Shopping Items filters and sort state
@@ -859,16 +870,39 @@ function App() {
           {activeNav === 'shopping_ingredients' && (
             <section id="shopping-ingredients" className="w-full">
               <div className="w-full max-w-4xl">
-                <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Shopping Ingredients List</h2>
+                <h2 className="text-2xl font-semibold mb-4 text-[#00D4AA]">Shopping Ingredients List</h2>
                 {cart.length === 0 ? (
                   <div className="text-[#b0b8c1] text-center py-8">
                     <div className="text-lg mb-2">No items in your cart yet</div>
                     <div className="text-sm">Add some menu items to generate your shopping list</div>
                   </div>
                 ) : (
-                  <div className="space-y-6">
+                  <div className="space-y-4">
+                    {/* Store Legend */}
+                    <div className="bg-[#2a2a2a] rounded-[12px] p-4 mb-4">
+                      <h3 className="text-sm font-semibold text-[#00D4AA] mb-3">Store Legend</h3>
+                      <div className="flex flex-wrap gap-4 text-xs">
+                        <div className="flex items-center">
+                          <div className="w-3 h-3 rounded-full bg-[#FF6B6B] mr-2"></div>
+                          <span className="text-white">H-Mart</span>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-3 h-3 rounded-full bg-[#4ECDC4] mr-2"></div>
+                          <span className="text-white">Whole Foods</span>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-3 h-3 rounded-full bg-[#45B7D1] mr-2"></div>
+                          <span className="text-white">Jewel</span>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-3 h-3 rounded-full bg-[#96CEB4] mr-2"></div>
+                          <span className="text-white">Trader Joe's</span>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Export buttons */}
-                    <div className="flex flex-wrap gap-3 mb-6">
+                    <div className="flex flex-wrap gap-3 mb-4">
                       <button
                         className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#00D4AA] border border-[#00D4AA] transition"
                         onClick={() => {
@@ -891,12 +925,7 @@ function App() {
                       >
                         📋 Copy to Clipboard
                       </button>
-                      <button
-                        className="bg-[#9945FF] text-white px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#9945FF] border border-[#9945FF] transition"
-                        onClick={() => window.print()}
-                      >
-                        🖨️ Print List
-                      </button>
+
                       <button
                         className="bg-[#3B82F6] text-white px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#3B82F6] border border-[#3B82F6] transition"
                         onClick={() => {
@@ -926,14 +955,27 @@ function App() {
                       </button>
                     </div>
                     
-                    {/* Ingredients by category */}
+                    {/* Ingredients by category - Mobile optimized */}
                     {(() => {
                       const { grouped, sortedCats } = getCartIngredientsSummary(cart, ingredients);
+                      
+                      // Helper function to get store color
+                      const getStoreColor = (store) => {
+                        if (!store) return 'bg-gray-500';
+                        const storeColors = {
+                          'H-Mart': 'bg-[#FF6B6B]',
+                          'Whole Foods': 'bg-[#4ECDC4]',
+                          'Jewel': 'bg-[#45B7D1]',
+                          'Trader Joe\'s': 'bg-[#96CEB4]'
+                        };
+                        return storeColors[store] || 'bg-gray-500';
+                      };
+
                       return (
-                        <div className="space-y-6">
+                        <div className="space-y-4">
                           {sortedCats.map(cat => (
-                            <div key={cat} className="bg-[#2a2a2a] rounded-[12px] p-6 shadow">
-                              <h3 className="text-xl font-bold mb-4 text-[#00D4AA] flex items-center">
+                            <div key={cat} className="bg-[#2a2a2a] rounded-[12px] p-4 shadow">
+                              <h3 className="text-lg font-bold mb-3 text-[#00D4AA] flex items-center">
                                 <span className="mr-2">
                                   {cat === 'Fish' ? '🐟' : 
                                    cat === 'Dairy' ? '🥛' : 
@@ -941,23 +983,18 @@ function App() {
                                 </span>
                                 {cat}
                               </h3>
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              <div className="space-y-2">
                                 {grouped[cat].map((ing, idx) => (
                                   <div key={idx} className="bg-[#1a1a1a] rounded-[8px] p-3 flex items-center justify-between">
-                                    <div>
-                                      <div className="font-medium text-white">{ing.name}</div>
-                                      {ing.store && (
-                                        <div className="text-sm text-[#b0b8c1]">{ing.store}</div>
-                                      )}
+                                    <div className="flex items-center flex-1 min-w-0">
+                                      <div className={`w-2 h-2 rounded-full mr-3 flex-shrink-0 ${getStoreColor(ing.store)}`}></div>
+                                      <div className="font-medium text-white truncate">{ing.name}</div>
                                     </div>
-                                    <div className="text-xs text-[#00D4AA] bg-[#00D4AA20] px-2 py-1 rounded">
-                                      {ing.category || 'Other'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       );
                     })()}
