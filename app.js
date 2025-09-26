@@ -118,6 +118,23 @@ function getCartIngredientsSummary(cart, ingredientsMaster) {
   Object.values(ingredientsMaster).flat().forEach(ing => {
     ingredientMap[ing.name.toLowerCase()] = { ...ing, totalQty: 0 };
   });
+  
+  // Check if cart has any rolls (for smart ingredient logic)
+  const hasRolls = cart.some(item => 
+    item.category === 'Maki Rolls' || item.category === 'Speciality Rolls'
+  );
+  
+  // Add smart ingredients if rolls are present
+  if (hasRolls) {
+    const smartIngredients = ['Rice', 'Soy Sauce', 'Wasabi'];
+    smartIngredients.forEach(smartName => {
+      const key = smartName.toLowerCase();
+      if (ingredientMap[key]) {
+        ingredientMap[key].totalQty = 1; // Always add 1 of each smart ingredient
+      }
+    });
+  }
+  
   // For each cart item, add up ingredient quantities
   cart.forEach(item => {
     const qty = item.quantity || 1;
@@ -134,6 +151,7 @@ function getCartIngredientsSummary(cart, ingredientsMaster) {
       }
     });
   });
+  
   // Group by category
   const grouped = {};
   Object.values(ingredientMap).forEach(ing => {
@@ -309,6 +327,27 @@ function App() {
 
   // Shopping List state
   const [shoppingListSort, setShoppingListSort] = useState({ key: 'store', dir: 'asc' });
+  const [alreadyHaveIngredients, setAlreadyHaveIngredients] = useState(new Set());
+
+  // Already have ingredient functions
+  const markAsAlreadyHave = (ingredient) => {
+    const key = `${ingredient.name}-${ingredient.store}-${ingredient.category}`;
+    setAlreadyHaveIngredients(prev => new Set([...prev, key]));
+  };
+
+  const unmarkAsAlreadyHave = (ingredient) => {
+    const key = `${ingredient.name}-${ingredient.store}-${ingredient.category}`;
+    setAlreadyHaveIngredients(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(key);
+      return newSet;
+    });
+  };
+
+  const isAlreadyHave = (ingredient) => {
+    const key = `${ingredient.name}-${ingredient.store}-${ingredient.category}`;
+    return alreadyHaveIngredients.has(key);
+  };
 
   // Get all ingredients flat
   const allIngredients = Object.values(ingredients).flat();
@@ -340,6 +379,10 @@ function App() {
 
   // Shopping List filtering and sorting logic (based on cart ingredients)
   let filteredShoppingList = cartIngredientsList;
+  
+  // Separate ingredients into "need to buy" and "already have"
+  const needToBuyIngredients = filteredShoppingList.filter(ing => !isAlreadyHave(ing));
+  const alreadyHaveList = filteredShoppingList.filter(ing => isAlreadyHave(ing));
   
   if (shoppingListSort.key) {
     filteredShoppingList = filteredShoppingList.slice().sort((a, b) => {
@@ -902,53 +945,64 @@ function App() {
                   <>
                     {/* Export Controls */}
                     <div className="flex justify-end gap-4 mb-6">
-                      <button
-                        className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[8px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#00D4AA] border border-[#00D4AA] transition"
-                        onClick={() => {
-                          // Group by store
-                          const storeGroups = {};
-                          filteredShoppingList.forEach(ing => {
-                            const store = ing.store || 'Other';
-                            if (!storeGroups[store]) {
-                              storeGroups[store] = [];
-                            }
-                            storeGroups[store].push(ing);
-                          });
-                          
-                          const lines = [];
-                          Object.keys(storeGroups).sort().forEach(store => {
-                            lines.push(`${store}:`);
-                            storeGroups[store].forEach(ing => {
-                              lines.push(`  • ${ing.name}${ing.category ? ` (${ing.category})` : ''}`);
+                        <button
+                          className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[8px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#00D4AA] border border-[#00D4AA] transition"
+                          onClick={() => {
+                            // Group by store (only need to buy ingredients)
+                            const storeGroups = {};
+                            needToBuyIngredients.forEach(ing => {
+                              const store = ing.store || 'Other';
+                              if (!storeGroups[store]) {
+                                storeGroups[store] = [];
+                              }
+                              storeGroups[store].push(ing);
                             });
-                            lines.push('');
-                          });
-                          navigator.clipboard.writeText(lines.join('\n'));
-                        }}
-                      >
-                        Export by Store
-                      </button>
-                      <button
-                        className="bg-[#9945FF] text-white px-4 py-2 rounded-[8px] font-semibold shadow hover:bg-[#7c3aed] border border-[#9945FF] transition"
-                        onClick={() => {
-                          // Group by category
-                          const lines = [];
-                          Object.keys(groupedShoppingList).sort().forEach(category => {
-                            lines.push(`${category}:`);
-                            groupedShoppingList[category].forEach(ing => {
-                              lines.push(`  • ${ing.name}${ing.store ? ` (${ing.store})` : ''}`);
+                            
+                            const lines = [];
+                            Object.keys(storeGroups).sort().forEach(store => {
+                              lines.push(`${store}:`);
+                              storeGroups[store].forEach(ing => {
+                                lines.push(`  • ${ing.name}${ing.category ? ` (${ing.category})` : ''}`);
+                              });
+                              lines.push('');
                             });
-                            lines.push('');
-                          });
-                          navigator.clipboard.writeText(lines.join('\n'));
-                        }}
-                      >
-                        Export by Category
-                      </button>
+                            navigator.clipboard.writeText(lines.join('\n'));
+                          }}
+                        >
+                          Export by Store
+                        </button>
+                        <button
+                          className="bg-[#9945FF] text-white px-4 py-2 rounded-[8px] font-semibold shadow hover:bg-[#7c3aed] border border-[#9945FF] transition"
+                          onClick={() => {
+                            // Group by category (only need to buy ingredients)
+                            const categoryGroups = {};
+                            needToBuyIngredients.forEach(ing => {
+                              const category = ing.category || 'Other';
+                              if (!categoryGroups[category]) {
+                                categoryGroups[category] = [];
+                              }
+                              categoryGroups[category].push(ing);
+                            });
+                            
+                            const lines = [];
+                            Object.keys(categoryGroups).sort().forEach(category => {
+                              lines.push(`${category}:`);
+                              categoryGroups[category].forEach(ing => {
+                                lines.push(`  • ${ing.name}${ing.store ? ` (${ing.store})` : ''}`);
+                              });
+                              lines.push('');
+                            });
+                            navigator.clipboard.writeText(lines.join('\n'));
+                          }}
+                        >
+                          Export by Category
+                        </button>
                     </div>
 
                     {/* Shopping List Table */}
-                    <div className="overflow-x-auto rounded-[12px] bg-[#2a2a2a] shadow">
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold mb-4 text-[#00D4AA]">Need to Buy</h3>
+                      <div className="overflow-x-auto rounded-[12px] bg-[#2a2a2a] shadow">
                       <table className="min-w-full text-sm">
                         <thead>
                           <tr className="border-b border-[#3a3a3a]">
@@ -973,30 +1027,80 @@ function App() {
                             <th className="px-4 py-3 text-left text-[#00D4AA] font-bold">
                               Quantity
                             </th>
+                            <th className="px-4 py-3 text-left text-[#00D4AA] font-bold">
+                              Action
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
-                          {filteredShoppingList.map((ing, idx) => (
+                          {needToBuyIngredients.map((ing, idx) => (
                             <tr key={idx} className="border-b border-[#1a1a1a] hover:bg-[#3a3a3a] transition">
                               <td className="px-4 py-3 text-white font-medium">{ing.store || '-'}</td>
                               <td className="px-4 py-3 text-[#b0b8c1]">{ing.category || '-'}</td>
                               <td className="px-4 py-3 text-white">{ing.shopping_cart_name || ing.name || '-'}</td>
                               <td className="px-4 py-3 text-white">{ing.totalQty || ing.quantity || '1'}</td>
+                              <td className="px-4 py-3">
+                                <button
+                                  className="text-xs bg-[#00D4AA] text-[#1a1a1a] px-2 py-1 rounded hover:bg-[#1a1a1a] hover:text-[#00D4AA] transition"
+                                  onClick={() => markAsAlreadyHave(ing)}
+                                >
+                                  Already have
+                                </button>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
+                      </div>
                     </div>
 
                     {/* Summary */}
                     <div className="mt-4 text-sm text-[#b0b8c1]">
-                      Showing {filteredShoppingList.length} ingredients
+                      Showing {needToBuyIngredients.length} ingredients to buy
                       {Object.keys(groupedShoppingList).length > 0 && (
                         <span className="ml-2">
                           across {Object.keys(groupedShoppingList).length} categories
                         </span>
                       )}
                     </div>
+
+                    {/* Already Have Section */}
+                    {alreadyHaveList.length > 0 && (
+                      <div className="mt-8">
+                        <h3 className="text-lg font-semibold mb-4 text-[#00D4AA]">Already Have</h3>
+                        <div className="overflow-x-auto rounded-[12px] bg-[#2a2a2a] shadow">
+                          <table className="min-w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-[#3a3a3a]">
+                                <th className="px-4 py-3 text-left text-[#00D4AA] font-bold">Grocery Store</th>
+                                <th className="px-4 py-3 text-left text-[#00D4AA] font-bold">Category</th>
+                                <th className="px-4 py-3 text-left text-[#00D4AA] font-bold">Name</th>
+                                <th className="px-4 py-3 text-left text-[#00D4AA] font-bold">Quantity</th>
+                                <th className="px-4 py-3 text-left text-[#00D4AA] font-bold">Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {alreadyHaveList.map((ing, idx) => (
+                                <tr key={idx} className="border-b border-[#1a1a1a] hover:bg-[#3a3a3a] transition">
+                                  <td className="px-4 py-3 text-white font-medium">{ing.store || '-'}</td>
+                                  <td className="px-4 py-3 text-[#b0b8c1]">{ing.category || '-'}</td>
+                                  <td className="px-4 py-3 text-white">{ing.shopping_cart_name || ing.name || '-'}</td>
+                                  <td className="px-4 py-3 text-white">{ing.totalQty || ing.quantity || '1'}</td>
+                                  <td className="px-4 py-3">
+                                    <button
+                                      className="text-xs bg-[#9945FF] text-white px-2 py-1 rounded hover:bg-[#7c3aed] transition"
+                                      onClick={() => unmarkAsAlreadyHave(ing)}
+                                    >
+                                      Need to buy
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
