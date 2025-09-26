@@ -917,44 +917,6 @@ function App() {
                       Print / Export
                     </button>
                   </div>
-                  {/* Ingredients summary section */}
-                  {(() => {
-                    const { grouped, sortedCats } = getCartIngredientsSummary(cart, ingredients);
-                    const lines = [];
-                    sortedCats.forEach(cat => {
-                      lines.push(`${cat}:`);
-                      grouped[cat].forEach(ing => {
-                        lines.push(`- ${ing.name}${ing.store ? ` (${ing.store})` : ''}`);
-                      });
-                      lines.push('');
-                    });
-                    const plainText = lines.join('\n');
-                    return (
-                      <div className="mt-8">
-                        <h3 className="text-xl font-semibold mb-2 text-[#00D4AA]">Shopping Ingredients</h3>
-                        <div className="mb-2">
-                          <button
-                            className="bg-[#2a2a2a] text-[#00D4AA] px-3 py-1 rounded-[8px] font-medium shadow hover:bg-[#00D4AA] hover:text-[#1a1a1a] border border-[#00D4AA] transition mb-2"
-                            onClick={() => { navigator.clipboard.writeText(plainText); }}
-                          >
-                            Copy Ingredients List
-                          </button>
-                        </div>
-                        <div className="text-white text-sm bg-[#232946] rounded-[12px] p-4 shadow max-w-2xl">
-                          {sortedCats.map(cat => (
-                            <div key={cat} className="mb-4">
-                              <div className="font-bold text-[#00D4AA] mb-1">{cat}:</div>
-                              <ul className="list-disc list-inside ml-4">
-                                {grouped[cat].map(ing => (
-                                  <li key={ing.name + ing.store} className="text-white">{ing.name}{ing.store ? ` (${ing.store})` : ''}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })()}
                 </div>
               )}
             </section>
