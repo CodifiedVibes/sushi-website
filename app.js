@@ -12,6 +12,7 @@ const NAV_OPTIONS = [
   { label: 'Runbook', key: 'runbook' },
   { label: 'Shopping Items', key: 'shopping_items' },
   { label: 'Shopping List', key: 'shopping_list' },
+  { label: 'Recipes', key: 'recipes' },
 ];
 
 const COLORS = {
@@ -303,9 +304,11 @@ function App() {
     setNavOpen(false);
   };
 
-  // Main content margin for cart and tips panel
+  // Main content margin for cart, tips panel, and recipe modal
   const mainContentStyle = {
-    marginRight: (activeNav === 'menu' && cart.length > 0) ? 320 : 0,
+    marginRight: (activeNav === 'menu' && cart.length > 0) ? 320 : 
+                 (activeNav === 'runbook' && selectedRunbookItem) ? 300 :
+                 (activeNav === 'recipes' && selectedRecipe) ? 400 : 0,
     transition: 'margin-right 0.3s',
   };
 
@@ -328,6 +331,60 @@ function App() {
   // Shopping List state
   const [shoppingListSort, setShoppingListSort] = useState({ key: 'store', dir: 'asc' });
   const [alreadyHaveIngredients, setAlreadyHaveIngredients] = useState(new Set());
+
+  // Recipes state
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [recipes, setRecipes] = useState([
+    {
+      id: 1,
+      name: 'Nikiri Sauce',
+      category: 'Sauce',
+      description: 'Traditional Japanese sauce for sushi and sashimi. A complex, umami-rich sauce that enhances the natural flavors of fish.',
+      ingredients: [
+        { name: 'Normal soy', amount: '3 oz' },
+        { name: 'Sweet soy', amount: '2 oz' },
+        { name: 'Mirin', amount: '2 oz' },
+        { name: 'Sake', amount: '2 oz' },
+        { name: 'Konbu', amount: '1 piece' },
+        { name: 'Bonito flakes', amount: '1 bag' }
+      ],
+      instructions: 'Combine all ingredients and simmer until reduced by half. Strain and store.',
+      storage: 'Can store up to 1 month',
+      prepTime: '30 minutes',
+      difficulty: 'Intermediate'
+    },
+    {
+      id: 2,
+      name: 'Yellowtail Yuzu',
+      category: 'Preparation',
+      description: 'Delicate preparation featuring thinly sliced sashimi-grade yellowtail with fresh jalapeño, garlic, and yuzu soy sauce',
+      ingredients: [
+        { name: 'Yellowtail', amount: '8 oz' },
+        { name: 'Jalapeño', amount: '1 pepper' },
+        { name: 'Garlic', amount: '2 cloves' },
+        { name: 'Yuzu juice', amount: '2 tbsp' },
+        { name: 'Soy sauce', amount: '1 tbsp' },
+        { name: 'Cilantro', amount: '2 tbsp' }
+      ],
+      instructions: 'Thinly slice yellowtail, arrange on plate, top with jalapeño, press against garlic, finish with yuzu soy sauce, garnish with cilantro',
+      storage: 'Serve immediately',
+      prepTime: '15 minutes',
+      difficulty: 'Easy'
+    }
+  ]);
+  const [recipeFilter, setRecipeFilter] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+
+  // Recipe filtering logic
+  const filteredRecipes = recipes.filter(recipe => {
+    const matchesSearch = !recipeFilter || 
+      recipe.name.toLowerCase().includes(recipeFilter.toLowerCase()) ||
+      recipe.description.toLowerCase().includes(recipeFilter.toLowerCase());
+    const matchesCategory = !selectedCategory || recipe.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const recipeCategories = Array.from(new Set(recipes.map(r => r.category)));
 
   // Already have ingredient functions
   const markAsAlreadyHave = (ingredient) => {
@@ -449,8 +506,8 @@ function App() {
       >
         <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><rect y="4" width="24" height="2" rx="1" fill="#00D4AA"/><rect y="11" width="24" height="2" rx="1" fill="#00D4AA"/><rect y="18" width="24" height="2" rx="1" fill="#00D4AA"/></svg>
       </button>
-      <main className="flex-1 flex flex-col sm:ml-56 ml-0 transition-all duration-300">
-        <div className="max-w-4xl w-full py-10 px-4 main-content" style={mainContentStyle}>
+      <main className="flex-1 flex flex-col sm:ml-56 ml-0 transition-all duration-300" style={mainContentStyle}>
+        <div className="max-w-4xl w-full py-10 px-4 main-content">
           {/* Always show menu page unless on shopping_items */}
           {activeNav === 'menu' && (
             <section id="menu">
@@ -1106,6 +1163,71 @@ function App() {
               </div>
             </section>
           )}
+          {activeNav === 'recipes' && (
+            <section id="recipes" className="w-full">
+              <div className="w-full max-w-4xl">
+                <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Recipes</h2>
+                
+                {/* Recipe Filters */}
+                <div className="flex flex-wrap gap-4 mb-6 items-end">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="block text-xs mb-1 text-[#b0b8c1]">Search Recipes</label>
+                    <input 
+                      className="w-full bg-[#181A20] text-white rounded px-3 py-2 border border-[#3a3a3a] focus:border-[#00D4AA] focus:outline-none" 
+                      value={recipeFilter} 
+                      onChange={e => setRecipeFilter(e.target.value)} 
+                      placeholder="Search recipes..." 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs mb-1 text-[#b0b8c1]">Category</label>
+                    <select 
+                      className="bg-[#181A20] text-white rounded px-3 py-2 border border-[#3a3a3a] focus:border-[#00D4AA] focus:outline-none" 
+                      value={selectedCategory} 
+                      onChange={e => setSelectedCategory(e.target.value)}
+                    >
+                      <option value="">All Categories</option>
+                      {recipeCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Recipe Cards */}
+                <div className="grid gap-4">
+                  {filteredRecipes.map(recipe => (
+                    <div 
+                      key={recipe.id} 
+                      className="bg-[#2a2a2a] rounded-[12px] p-4 shadow hover:bg-[#3a3a3a] transition cursor-pointer"
+                      onClick={() => setSelectedRecipe(recipe)}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="text-lg font-semibold text-[#00D4AA] mb-1">{recipe.name}</h3>
+                          <div className="flex gap-3 text-sm text-[#b0b8c1]">
+                            <span className="bg-[#3a3a3a] px-2 py-1 rounded">{recipe.category}</span>
+                            <span>⏱️ {recipe.prepTime}</span>
+                            <span>📊 {recipe.difficulty}</span>
+                          </div>
+                        </div>
+                        <div className="text-[#b0b8c1] text-sm">
+                          Click to view details →
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {filteredRecipes.length === 0 && (
+                  <div className="text-center py-12">
+                    <div className="text-[#b0b8c1] text-lg">No recipes found</div>
+                    <div className="text-[#b0b8c1] text-sm">Try adjusting your search or category filter</div>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
           {activeNav === 'cart' && (
             <section id="cart" className="w-full">
               <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Shopping Cart</h2>
@@ -1238,6 +1360,61 @@ function App() {
                 <h4 className="text-md font-semibold mb-2 text-[#00D4AA]">Notes</h4>
                 <div className="text-sm text-white" style={{whiteSpace: 'normal', lineHeight: '1.5'}}>
                   {selectedRunbookItem.notes}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </aside>
+      
+      {/* Recipe Modal (right) - only on recipes page */}
+      <aside className={`recipe-modal fixed top-0 right-0 h-full w-[400px] bg-[#2a2a2a] shadow-2xl z-40 p-6 flex flex-col gap-4 rounded-l-[18px] border-l border-[#00D4AA] transition-all duration-300 ${(activeNav === 'recipes' && selectedRecipe) ? '' : 'hidden'}`} style={{boxShadow: '0 8px 32px 0 #00D4AA55'}}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-[#00D4AA]">Recipe Details</h2>
+          <button
+            className="text-[#b0b8c1] hover:text-white text-2xl"
+            onClick={() => setSelectedRecipe(null)}
+          >
+            ×
+          </button>
+        </div>
+        
+        {selectedRecipe && (
+          <div className="flex-1 overflow-y-auto">
+            <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
+              <h3 className="text-lg font-semibold mb-2 text-white">{selectedRecipe.name}</h3>
+              <div className="flex gap-3 text-sm text-[#b0b8c1] mb-3">
+                <span className="bg-[#3a3a3a] px-2 py-1 rounded">{selectedRecipe.category}</span>
+                <span>⏱️ {selectedRecipe.prepTime}</span>
+                <span>📊 {selectedRecipe.difficulty}</span>
+              </div>
+              <p className="text-sm text-white">{selectedRecipe.description}</p>
+            </div>
+            
+            <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
+              <h4 className="text-md font-semibold mb-3 text-[#00D4AA]">Ingredients</h4>
+              <ul className="space-y-2">
+                {selectedRecipe.ingredients.map((ingredient, idx) => (
+                  <li key={idx} className="text-sm text-white flex justify-between">
+                    <span>{ingredient.name}</span>
+                    <span className="text-[#b0b8c1]">{ingredient.amount}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
+              <h4 className="text-md font-semibold mb-3 text-[#00D4AA]">Instructions</h4>
+              <div className="text-sm text-white" style={{whiteSpace: 'normal', lineHeight: '1.5'}}>
+                {selectedRecipe.instructions}
+              </div>
+            </div>
+            
+            {selectedRecipe.storage && (
+              <div className="bg-[#1a1a1a] rounded-[12px] p-4">
+                <h4 className="text-md font-semibold mb-2 text-[#00D4AA]">Storage</h4>
+                <div className="text-sm text-white">
+                  {selectedRecipe.storage}
                 </div>
               </div>
             )}
