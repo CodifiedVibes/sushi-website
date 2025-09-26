@@ -880,8 +880,46 @@ function App() {
                       </thead>
                       <tbody>
                         {(() => {
-                          // Sort: T-5, T-3, T-1, then others
-                          const timelineOrder = {'T-5': 1, 'T-3': 2, 'T-1': 3};
+                          // Smart timeline sorting: T-5 days → T-1 day → T-x hours → T-x minutes → T-0
+                          const getTimelineOrder = (timeline) => {
+                            const timelineStr = timeline.toString().toUpperCase();
+                            
+                            // Days (T-5, T-4, T-3, T-2, T-1) - reverse order
+                            if (timelineStr.includes('T-') && (timelineStr.includes('DAY') || timelineStr.includes('DAYS'))) {
+                              const dayMatch = timelineStr.match(/T-(\d+)/);
+                              if (dayMatch) {
+                                const dayNum = parseInt(dayMatch[1]);
+                                return 100 - dayNum; // T-5 = 95, T-4 = 96, T-3 = 97, T-2 = 98, T-1 = 99
+                              }
+                            }
+                            
+                            // Hours (T-4H, T-3H, T-2H, T-1H) - reverse order
+                            if (timelineStr.includes('T-') && (timelineStr.includes('H') || timelineStr.includes('HOUR') || timelineStr.includes('HOURS'))) {
+                              const hourMatch = timelineStr.match(/T-(\d+)H/);
+                              if (hourMatch) {
+                                const hourNum = parseInt(hourMatch[1]);
+                                return 200 - hourNum; // T-4H = 196, T-3H = 197, T-2H = 198, T-1H = 199
+                              }
+                            }
+                            
+                            // Minutes (T-30M, T-15M, T-5M, etc.) - reverse order
+                            if (timelineStr.includes('T-') && timelineStr.includes('M')) {
+                              const minMatch = timelineStr.match(/T-(\d+)M/);
+                              if (minMatch) {
+                                const minNum = parseInt(minMatch[1]);
+                                return 300 - minNum; // T-30M = 270, T-15M = 285, T-5M = 295
+                              }
+                            }
+                            
+                            // T-0 (final)
+                            if (timelineStr === 'T-0') {
+                              return 300;
+                            }
+                            
+                            // Default fallback
+                            return 999;
+                          };
+                          
                           // Filter items based on selected filter
                           const filteredRunbook = runbook.filter(item => {
                             if (runbookFilter === 'beginner') {
@@ -890,11 +928,11 @@ function App() {
                               return item.has_advanced;
                             }
                           });
+                          
                           const sorted = [...filteredRunbook].sort((a, b) => {
-                            const aOrder = timelineOrder[a.timeline] || 99;
-                            const bOrder = timelineOrder[b.timeline] || 99;
-                            if (aOrder !== bOrder) return aOrder - bOrder;
-                            return 0;
+                            const aOrder = getTimelineOrder(a.timeline);
+                            const bOrder = getTimelineOrder(b.timeline);
+                            return aOrder - bOrder;
                           });
                           return sorted.map((item, idx) => {
                             const globalIdx = runbook.indexOf(item);
@@ -913,10 +951,7 @@ function App() {
                                   {item.timeline}
                                 </td>
                                 <td className="px-4 py-2">
-                                  <div className="font-bold text-white mb-1">{item.activity}</div>
-                                  <div className="italic text-[#b0b8c1]" style={{whiteSpace: 'normal'}}>
-                                    {stepText}
-                                  </div>
+                                  <div className="font-bold text-white">{item.activity}</div>
                                 </td>
                               </tr>
                             );
@@ -1355,6 +1390,28 @@ function App() {
                 <div className="text-sm text-[#00D4AA] mb-3">⏱️ {selectedRunbookItem.estimated_duration}</div>
               )}
             </div>
+            
+            {/* Beginner Steps */}
+            {selectedRunbookItem.beginner_steps && (
+              <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
+                <h4 className="text-md font-semibold mb-3 text-[#00D4AA]">Beginner Steps</h4>
+                <div className="text-sm text-white" style={{whiteSpace: 'normal', lineHeight: '1.5'}}>
+                  {selectedRunbookItem.beginner_steps}
+                </div>
+              </div>
+            )}
+            
+            {/* Advanced Steps */}
+            {selectedRunbookItem.advanced_steps && (
+              <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
+                <h4 className="text-md font-semibold mb-3 text-[#00D4AA]">Advanced Steps</h4>
+                <div className="text-sm text-white" style={{whiteSpace: 'normal', lineHeight: '1.5'}}>
+                  {selectedRunbookItem.advanced_steps}
+                </div>
+              </div>
+            )}
+            
+            {/* Notes */}
             {selectedRunbookItem.notes && (
               <div className="bg-[#1a1a1a] rounded-[12px] p-4">
                 <h4 className="text-md font-semibold mb-2 text-[#00D4AA]">Notes</h4>
