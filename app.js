@@ -868,7 +868,6 @@ function App() {
                         <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Item</th>
                         <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Category</th>
                         <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Quantity</th>
-                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Price</th>
                         <th className="px-4 py-2"></th>
                       </tr>
                     </thead>
@@ -902,7 +901,6 @@ function App() {
                             <td className="px-4 py-2 font-semibold text-white">{item.name}</td>
                             <td className="px-4 py-2 text-[#b0b8c1]">{item.category}</td>
                             <td className="px-4 py-2 text-white">{item.quantity}</td>
-                            <td className="px-4 py-2 text-white">{item.price ? `$${(item.price * item.quantity).toFixed(2)}` : '-'}</td>
                             <td className="px-4 py-2">
                               <button className="text-xs text-[#b0b8c1] hover:text-red-400" onClick={() => removeFromCart(item)}>Remove</button>
                             </td>
@@ -911,8 +909,7 @@ function App() {
                       })()}
                     </tbody>
                   </table>
-                  <div className="flex justify-between items-center mt-4">
-                    <div className="text-lg font-bold text-[#00D4AA]">Total: {cart.reduce((sum, item) => sum + (item.price ? item.price * item.quantity : 0), 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</div>
+                  <div className="flex justify-end items-center mt-4">
                     <button
                       className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#00D4AA] border border-[#00D4AA] transition"
                       onClick={() => window.print()}

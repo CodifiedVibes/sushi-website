@@ -43,6 +43,11 @@ sushi-website/
    ```
    The API will be available at `http://localhost:5001`
 
+   **Kill the API server:**
+    ```bash
+   $ lsof -ti:5001 | xargs kill -9
+   ```
+   
 3. **Start the web server:**
    ```bash
    python3 -m http.server 8000
