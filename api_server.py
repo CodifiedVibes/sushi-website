@@ -260,6 +260,96 @@ if __name__ == '__main__':
     print("  GET /api/categories - Get categories")
     print("  GET /api/menu/<id> - Get specific menu item")
     print("  GET /api/search?q=<query> - Search menu items")
+    print("  GET /api/recipes - Get all recipes")
+    print("  GET /api/recipes/<id> - Get specific recipe")
+    print("  GET /api/recipes/category/<category> - Get recipes by category")
     print("  GET /api/health - Health check")
     
     app.run(debug=True, host='0.0.0.0', port=5001) 
+@app.route('/api/recipes', methods=['GET'])
+def get_recipes():
+    """Get all recipes"""
+    conn = get_db_connection()
+    
+    try:
+        cursor = conn.execute("""
+            SELECT * FROM recipes 
+            ORDER BY category, name
+        """)
+        
+        recipes = [dict(row) for row in cursor.fetchall()]
+        
+        # Get ingredients for each recipe
+        for recipe in recipes:
+            cursor = conn.execute("""
+                SELECT ingredient_name, quantity, unit, notes, order_index
+                FROM recipe_ingredients 
+                WHERE recipe_id = ?
+                ORDER BY order_index
+            """, (recipe['id'],))
+            
+            recipe['ingredients'] = [dict(row) for row in cursor.fetchall()]
+        
+        return jsonify(recipes)
+        
+    finally:
+        conn.close()
+
+@app.route('/api/recipes/<int:recipe_id>', methods=['GET'])
+def get_recipe(recipe_id):
+    """Get specific recipe by ID"""
+    conn = get_db_connection()
+    
+    try:
+        cursor = conn.execute("""
+            SELECT * FROM recipes WHERE id = ?
+        """, (recipe_id,))
+        
+        recipe = dict(cursor.fetchone())
+        if not recipe:
+            return jsonify({'error': 'Recipe not found'}), 404
+        
+        # Get ingredients for the recipe
+        cursor = conn.execute("""
+            SELECT ingredient_name, quantity, unit, notes, order_index
+            FROM recipe_ingredients 
+            WHERE recipe_id = ?
+            ORDER BY order_index
+        """, (recipe_id,))
+        
+        recipe['ingredients'] = [dict(row) for row in cursor.fetchall()]
+        
+        return jsonify(recipe)
+        
+    finally:
+        conn.close()
+
+@app.route('/api/recipes/category/<category>', methods=['GET'])
+def get_recipes_by_category(category):
+    """Get recipes by category"""
+    conn = get_db_connection()
+    
+    try:
+        cursor = conn.execute("""
+            SELECT * FROM recipes 
+            WHERE category = ?
+            ORDER BY name
+        """, (category,))
+        
+        recipes = [dict(row) for row in cursor.fetchall()]
+        
+        # Get ingredients for each recipe
+        for recipe in recipes:
+            cursor = conn.execute("""
+                SELECT ingredient_name, quantity, unit, notes, order_index
+                FROM recipe_ingredients 
+                WHERE recipe_id = ?
+                ORDER BY order_index
+            """, (recipe['id'],))
+            
+            recipe['ingredients'] = [dict(row) for row in cursor.fetchall()]
+        
+        return jsonify(recipes)
+        
+    finally:
+        conn.close()

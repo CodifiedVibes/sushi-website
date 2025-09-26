@@ -11,7 +11,6 @@ const NAV_OPTIONS = [
   { label: 'Menu', key: 'menu' },
   { label: 'Runbook', key: 'runbook' },
   { label: 'Shopping Items', key: 'shopping_items' },
-  { label: 'Shopping Ingredients', key: 'shopping_ingredients' },
 ];
 
 const COLORS = {
@@ -81,25 +80,19 @@ function categorizeIngredients(ingredients) {
 function getCartIngredients(cart, ingredientsMaster) {
   // Build a map of ingredient name -> ingredient object (for category lookup)
   const ingredientMap = {};
-  // Handle both old flat structure and new categorized structure
-  const allIngredients = Array.isArray(ingredientsMaster) 
-    ? ingredientsMaster 
-    : Object.values(ingredientsMaster).flat();
-  
-  allIngredients.forEach(ing => {
+  Object.values(ingredientsMaster).flat().forEach(ing => {
     ingredientMap[ing.name.toLowerCase()] = ing;
   });
-  
   // Gather all ingredients from cart
-  let allCartIngredients = [];
+  let allIngredients = [];
   cart.forEach(item => {
     // Combine inside and on top
     const inside = (item.ingredients_inside || []).map(i => i.trim()).filter(Boolean);
     const onTop = (item.ingredients_on_top || []).map(i => i.trim()).filter(Boolean);
-    allCartIngredients.push(...inside, ...onTop);
+    allIngredients.push(...inside, ...onTop);
   });
   // Deduplicate (case-insensitive)
-  const uniqueNames = Array.from(new Set(allCartIngredients.map(i => i.toLowerCase())));
+  const uniqueNames = Array.from(new Set(allIngredients.map(i => i.toLowerCase())));
   // Map to ingredient objects (with fallback if not found)
   return uniqueNames.map(name => ingredientMap[name] || { name });
 }
@@ -121,15 +114,9 @@ function getMenuItemImage(item) {
 function getCartIngredientsSummary(cart, ingredientsMaster) {
   // Build a map of ingredient name -> { ...ingredient, totalQty }
   const ingredientMap = {};
-  // Handle both old flat structure and new categorized structure
-  const allIngredients = Array.isArray(ingredientsMaster) 
-    ? ingredientsMaster 
-    : Object.values(ingredientsMaster).flat();
-  
-  allIngredients.forEach(ing => {
+  Object.values(ingredientsMaster).flat().forEach(ing => {
     ingredientMap[ing.name.toLowerCase()] = { ...ing, totalQty: 0 };
   });
-  
   // For each cart item, add up ingredient quantities
   cart.forEach(item => {
     const qty = item.quantity || 1;
@@ -310,27 +297,13 @@ function App() {
     { label: 'Store', key: 'store' },
     { label: 'Cost', key: 'cost' },
     { label: 'Quantity', key: 'quantity' },
+    { label: 'Unit Cost', key: 'unit_cost' },
   ];
 
   // Shopping Items filters and sort state
   const [shoppingCategory, setShoppingCategory] = useState('');
   const [shoppingStore, setShoppingStore] = useState('');
   const [shoppingName, setShoppingName] = useState('');
-  const [openFilterDropdown, setOpenFilterDropdown] = useState(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (openFilterDropdown && !event.target.closest('.filter-dropdown')) {
-        setOpenFilterDropdown(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [openFilterDropdown]);
   const [shoppingSort, setShoppingSort] = useState({ key: 'name', dir: 'asc' });
 
   // Get all ingredients flat
@@ -409,9 +382,9 @@ function App() {
               
               {/* Filter Sections */}
               <div className="mb-6 space-y-4">
-                {/* Filters Section */}
+                {/* Popular Picks Section */}
                 <div>
-                  <h3 className="text-sm font-semibold text-[#b0b8c1] mb-2 uppercase tracking-wide">Filters</h3>
+                  <h3 className="text-sm font-semibold text-[#b0b8c1] mb-2 uppercase tracking-wide">Popular Picks</h3>
                   <div className="flex items-center gap-4">
                     <div className="flex gap-2">
                       {[
@@ -458,10 +431,10 @@ function App() {
                   </div>
                 </div>
 
-                {/* Category Section - only show when "All" is selected */}
+                {/* Browse by Category Section - only show when "All" is selected */}
                 {menuFilter === 'all' && (
                   <div>
-                    <h3 className="text-sm font-semibold text-[#b0b8c1] mb-2 uppercase tracking-wide">Category</h3>
+                    <h3 className="text-sm font-semibold text-[#b0b8c1] mb-2 uppercase tracking-wide">Browse by Category</h3>
                     <div className="grid grid-cols-4 gap-3">
                       {orderedCategories.map((cat) => {
                         const isSelected = selectedCategories.has(cat);
@@ -827,23 +800,27 @@ function App() {
             <section id="shopping-items" className="w-full">
               <div className="w-full max-w-4xl">
                 <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Shopping Items</h2>
-                
-                {/* Clear All Filters Button */}
-                {(shoppingCategory || shoppingStore || shoppingName) && (
-                  <div className="mb-4">
-                    <button
-                      className="px-4 py-2 bg-[#00D4AA] text-[#1a1a1a] rounded-lg font-medium hover:bg-[#00B894] transition-colors"
-                      onClick={() => {
-                        setShoppingCategory('');
-                        setShoppingStore('');
-                        setShoppingName('');
-                        setOpenFilterDropdown(null);
-                      }}
-                    >
-                      Clear All Filters
-                    </button>
+                {/* Filters */}
+                <div className="flex flex-wrap gap-4 mb-4 items-end">
+                  <div>
+                    <label className="block text-xs mb-1 text-[#b0b8c1]">Category</label>
+                    <select className="bg-[#181A20] text-white rounded px-2 py-1" value={shoppingCategory} onChange={e => setShoppingCategory(e.target.value)}>
+                      <option value="">All</option>
+                      {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    </select>
                   </div>
-                )}
+                  <div>
+                    <label className="block text-xs mb-1 text-[#b0b8c1]">Store</label>
+                    <select className="bg-[#181A20] text-white rounded px-2 py-1" value={shoppingStore} onChange={e => setShoppingStore(e.target.value)}>
+                      <option value="">All</option>
+                      {uniqueStores.map(store => <option key={store} value={store}>{store}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs mb-1 text-[#b0b8c1]">Name</label>
+                    <input className="bg-[#181A20] text-white rounded px-2 py-1" value={shoppingName} onChange={e => setShoppingName(e.target.value)} placeholder="Search name..." />
+                  </div>
+                </div>
                 <div className="overflow-x-auto rounded-[12px] bg-[#2a2a2a] p-4 shadow">
                   <table className="min-w-full text-sm">
                     <thead>
@@ -851,79 +828,11 @@ function App() {
                         {ingredientColumns.map(col => (
                           <th
                             key={col.key}
-                            className="px-4 py-2 text-left text-[#00D4AA] font-bold whitespace-nowrap cursor-pointer select-none relative"
+                            className="px-4 py-2 text-left text-[#00D4AA] font-bold whitespace-nowrap cursor-pointer select-none"
                             onClick={() => setShoppingSort(s => s.key === col.key ? { key: col.key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key: col.key, dir: 'asc' })}
                           >
-                            <div className="flex items-center justify-between">
-                              <span>{col.label}</span>
-                              <div className="flex items-center gap-1">
-                                {shoppingSort.key === col.key && (shoppingSort.dir === 'asc' ? ' ▲' : ' ▼')}
-                                {/* Filter button for filterable columns */}
-                                {(col.key === 'category' || col.key === 'store' || col.key === 'name') && (
-                                  <button
-                                    className={`ml-2 text-xs transition-colors ${
-                                      (col.key === 'category' && shoppingCategory) ||
-                                      (col.key === 'store' && shoppingStore) ||
-                                      (col.key === 'name' && shoppingName)
-                                        ? 'text-[#00D4AA]' : 'text-[#b0b8c1] hover:text-white'
-                                    }`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      // If this dropdown is already open, close it. Otherwise, open it.
-                                      setOpenFilterDropdown(openFilterDropdown === col.key ? null : col.key);
-                                    }}
-                                  >
-                                    {openFilterDropdown === col.key ? '✕' : '⚙️'}
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {/* Inline filter dropdown */}
-                            {openFilterDropdown === col.key && (
-                              <div className="filter-dropdown absolute top-full left-0 mt-1 bg-[#181A20] border border-[#3a3a3a] rounded-lg shadow-lg z-10 min-w-[200px]">
-                                <div className="p-3">
-                                  {col.key === 'category' && (
-                                    <div>
-                                      <div className="text-xs text-[#b0b8c1] mb-2">Filter by Category</div>
-                                      <select 
-                                        className="w-full bg-[#2a2a2a] text-white rounded px-2 py-1 text-sm border border-[#3a3a3a]"
-                                        value={shoppingCategory} 
-                                        onChange={e => setShoppingCategory(e.target.value)}
-                                      >
-                                        <option value="">All Categories</option>
-                                        {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                      </select>
-                                    </div>
-                                  )}
-                                  {col.key === 'store' && (
-                                    <div>
-                                      <div className="text-xs text-[#b0b8c1] mb-2">Filter by Store</div>
-                                      <select 
-                                        className="w-full bg-[#2a2a2a] text-white rounded px-2 py-1 text-sm border border-[#3a3a3a]"
-                                        value={shoppingStore} 
-                                        onChange={e => setShoppingStore(e.target.value)}
-                                      >
-                                        <option value="">All Stores</option>
-                                        {uniqueStores.map(store => <option key={store} value={store}>{store}</option>)}
-                                      </select>
-                                    </div>
-                                  )}
-                                  {col.key === 'name' && (
-                                    <div>
-                                      <div className="text-xs text-[#b0b8c1] mb-2">Search by Name</div>
-                                      <input 
-                                        className="w-full bg-[#2a2a2a] text-white rounded px-2 py-1 text-sm border border-[#3a3a3a]"
-                                        value={shoppingName} 
-                                        onChange={e => setShoppingName(e.target.value)} 
-                                        placeholder="Search name..."
-                                      />
-                                    </div>
-                                  )}
-
-                                </div>
-                              </div>
-                            )}
+                            {col.label}
+                            {shoppingSort.key === col.key && (shoppingSort.dir === 'asc' ? ' ▲' : ' ▼')}
                           </th>
                         ))}
                       </tr>
@@ -946,179 +855,20 @@ function App() {
               </div>
             </section>
           )}
-          {activeNav === 'shopping_ingredients' && (
-            <section id="shopping-ingredients" className="w-full">
-              <div className="w-full max-w-4xl">
-                <h2 className="text-2xl font-semibold mb-4 text-[#00D4AA]">Shopping List</h2>
-                {cart.length === 0 ? (
-                  <div className="text-[#b0b8c1] text-center py-8">
-                    <div className="text-lg mb-2">No items in your cart yet</div>
-                    <div className="text-sm">Add some menu items to generate your shopping list</div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {/* Store Legend and Export Buttons Row */}
-                    <div className="flex justify-between items-center mb-4">
-                      {/* Dynamic Store Legend */}
-                      {(() => {
-                        const { grouped } = getCartIngredientsSummary(cart, ingredients);
-                        const allIngredients = Object.values(grouped).flat();
-                        const uniqueStores = [...new Set(allIngredients.map(ing => ing.store).filter(Boolean))];
-                        
-                        if (uniqueStores.length === 0) return <div></div>;
-                        
-                        const storeColors = {
-                          'H-Mart': 'bg-[#FF6B6B]',
-                          'Whole Foods': 'bg-[#4ECDC4]',
-                          'Jewel': 'bg-[#45B7D1]',
-                          'Trader Joe\'s': 'bg-[#96CEB4]'
-                        };
-                        
-                        return (
-                          <div className="flex items-center gap-3 text-xs text-[#b0b8c1]">
-                            <span className="font-medium">Stores:</span>
-                            {uniqueStores.map(store => (
-                              <div key={store} className="flex items-center gap-1">
-                                <div className={`w-2 h-2 rounded-full ${storeColors[store] || 'bg-gray-500'}`}></div>
-                                <span>{store}</span>
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      })()}
-
-                                            {/* Export buttons */}
-                      <div className="flex gap-3">
-                        <button
-                          className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#00D4AA] border border-[#00D4AA] transition"
-                          onClick={() => {
-                            const { grouped, sortedCats } = getCartIngredientsSummary(cart, ingredients);
-                            const lines = [];
-                            lines.push('🛒 SHOPPING LIST');
-                            lines.push(`Generated: ${new Date().toLocaleDateString()}`);
-                            lines.push('');
-                            sortedCats.forEach(cat => {
-                              lines.push(`${cat.toUpperCase()}:`);
-                              grouped[cat].forEach(ing => {
-                                lines.push(`• ${ing.name}${ing.store ? ` (${ing.store})` : ''}`);
-                              });
-                              lines.push('');
-                            });
-                            const plainText = lines.join('\n');
-                            navigator.clipboard.writeText(plainText);
-                            alert('Shopping list copied to clipboard!');
-                          }}
-                        >
-                          📋 Copy to Clipboard
-                        </button>
-
-                        <button
-                          className="bg-[#3B82F6] text-white px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#3B82F6] border border-[#3B82F6] transition"
-                          onClick={() => {
-                            const { grouped, sortedCats } = getCartIngredientsSummary(cart, ingredients);
-                            const lines = [];
-                            lines.push('SHOPPING LIST');
-                            lines.push(`Generated: ${new Date().toLocaleDateString()}`);
-                            lines.push('');
-                            sortedCats.forEach(cat => {
-                              lines.push(`${cat.toUpperCase()}:`);
-                              grouped[cat].forEach(ing => {
-                                lines.push(`- ${ing.name}${ing.store ? ` (${ing.store})` : ''}`);
-                              });
-                              lines.push('');
-                            });
-                            const plainText = lines.join('\n');
-                            const blob = new Blob([plainText], { type: 'text/plain' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `shopping-list-${new Date().toISOString().split('T')[0]}.txt`;
-                            a.click();
-                            URL.revokeObjectURL(url);
-                          }}
-                        >
-                          📥 Download .txt
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {/* Ingredients by category - Mobile optimized */}
-                    {(() => {
-                      const { grouped, sortedCats } = getCartIngredientsSummary(cart, ingredients);
-                      
-                      // Helper function to get store color
-                      const getStoreColor = (store) => {
-                        if (!store) return 'bg-gray-500';
-                        const storeColors = {
-                          'H-Mart': 'bg-[#FF6B6B]',
-                          'Whole Foods': 'bg-[#4ECDC4]',
-                          'Jewel': 'bg-[#45B7D1]',
-                          'Trader Joe\'s': 'bg-[#96CEB4]'
-                        };
-                        return storeColors[store] || 'bg-gray-500';
-                      };
-
-                      return (
-                        <div className="space-y-4">
-                          {sortedCats.map(cat => (
-                            <div key={cat} className="bg-[#2a2a2a] rounded-[12px] p-4 shadow">
-                              <h3 className="text-lg font-bold mb-3 text-[#00D4AA] flex items-center">
-                                <span className="mr-2">
-                                  {cat === 'Fish' ? '🐟' : 
-                                   cat === 'Dairy' ? '🥛' : 
-                                   cat === 'Vegetables' ? '🥬' : '📦'}
-                                </span>
-                                {cat}
-                              </h3>
-                              <div className="space-y-2">
-                                {grouped[cat].map((ing, idx) => (
-                                  <div key={idx} className="bg-[#1a1a1a] rounded-[8px] p-3 flex items-center justify-between">
-                                    <div className="flex items-center flex-1 min-w-0">
-                                      <div className={`w-2 h-2 rounded-full mr-3 flex-shrink-0 ${getStoreColor(ing.store)}`}></div>
-                                      <div className="font-medium text-white truncate">{ing.name}</div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                    
-                    {/* Summary stats */}
-                    <div className="bg-[#2a2a2a] rounded-[12px] p-4 shadow">
-                      <div className="text-center">
-                        <div className="text-lg font-semibold text-[#00D4AA] mb-2">Summary</div>
-                        <div className="text-sm text-[#b0b8c1]">
-                          {(() => {
-                            const { grouped } = getCartIngredientsSummary(cart, ingredients);
-                            const totalItems = Object.values(grouped).flat().length;
-                            const categories = Object.keys(grouped).length;
-                            return `${totalItems} items across ${categories} categories`;
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
           {activeNav === 'cart' && (
             <section id="cart" className="w-full">
-              <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Cart</h2>
+              <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Shopping Cart</h2>
               {cart.length === 0 ? (
-                <div className="text-[#b0b8c1]">No items selected yet.</div>
+                <div className="text-[#b0b8c1]">Your cart is empty.</div>
               ) : (
                 <div className="space-y-4">
                   <table className="min-w-full text-sm bg-[#2a2a2a] rounded-[12px] shadow">
                     <thead>
                       <tr>
-                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Category</th>
                         <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Item</th>
+                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Category</th>
                         <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Quantity</th>
-                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Description</th>
+                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Price</th>
                         <th className="px-4 py-2"></th>
                       </tr>
                     </thead>
@@ -1149,10 +899,10 @@ function App() {
                         
                         return sortedCart.map((item, idx) => (
                           <tr key={idx} className="border-b border-[#1a1a1a]">
-                            <td className="px-4 py-2 text-[#b0b8c1] font-medium">{item.category}</td>
-                            <td className="px-4 py-2 font-semibold text-white whitespace-nowrap">{item.name}</td>
+                            <td className="px-4 py-2 font-semibold text-white">{item.name}</td>
+                            <td className="px-4 py-2 text-[#b0b8c1]">{item.category}</td>
                             <td className="px-4 py-2 text-white">{item.quantity}</td>
-                            <td className="px-4 py-2 text-[#b0b8c1] text-sm">{item.description || getDescription(item)}</td>
+                            <td className="px-4 py-2 text-white">{item.price ? `$${(item.price * item.quantity).toFixed(2)}` : '-'}</td>
                             <td className="px-4 py-2">
                               <button className="text-xs text-[#b0b8c1] hover:text-red-400" onClick={() => removeFromCart(item)}>Remove</button>
                             </td>
@@ -1161,18 +911,56 @@ function App() {
                       })()}
                     </tbody>
                   </table>
-                  <div className="flex justify-end items-center mt-4">
+                  <div className="flex justify-between items-center mt-4">
+                    <div className="text-lg font-bold text-[#00D4AA]">Total: {cart.reduce((sum, item) => sum + (item.price ? item.price * item.quantity : 0), 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</div>
                     <button
                       className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#00D4AA] border border-[#00D4AA] transition"
                       onClick={() => window.print()}
                     >
-                      Print / Share Menu
+                      Print / Export
                     </button>
                   </div>
-
-            </div>
-          )}
-        </section>
+                  {/* Ingredients summary section */}
+                  {(() => {
+                    const { grouped, sortedCats } = getCartIngredientsSummary(cart, ingredients);
+                    const lines = [];
+                    sortedCats.forEach(cat => {
+                      lines.push(`${cat}:`);
+                      grouped[cat].forEach(ing => {
+                        lines.push(`- ${ing.name}${ing.store ? ` (${ing.store})` : ''}`);
+                      });
+                      lines.push('');
+                    });
+                    const plainText = lines.join('\n');
+                    return (
+                      <div className="mt-8">
+                        <h3 className="text-xl font-semibold mb-2 text-[#00D4AA]">Shopping Ingredients</h3>
+                        <div className="mb-2">
+                          <button
+                            className="bg-[#2a2a2a] text-[#00D4AA] px-3 py-1 rounded-[8px] font-medium shadow hover:bg-[#00D4AA] hover:text-[#1a1a1a] border border-[#00D4AA] transition mb-2"
+                            onClick={() => { navigator.clipboard.writeText(plainText); }}
+                          >
+                            Copy Ingredients List
+                          </button>
+                        </div>
+                        <div className="text-white text-sm bg-[#232946] rounded-[12px] p-4 shadow max-w-2xl">
+                          {sortedCats.map(cat => (
+                            <div key={cat} className="mb-4">
+                              <div className="font-bold text-[#00D4AA] mb-1">{cat}:</div>
+                              <ul className="list-disc list-inside ml-4">
+                                {grouped[cat].map(ing => (
+                                  <li key={ing.name + ing.store} className="text-white">{ing.name}{ing.store ? ` (${ing.store})` : ''}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </section>
           )}
         </div>
       </main>
