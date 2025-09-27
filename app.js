@@ -307,7 +307,7 @@ function App() {
   // Main content margin for cart, tips panel, and recipe modal
   const mainContentStyle = {
     marginRight: (activeNav === 'menu' && cart.length > 0) ? 320 : 
-                 (activeNav === 'runbook' && selectedRunbookItem) ? 300 :
+                 (activeNav === 'runbook' && selectedRunbookItem) ? 400 :
                  (activeNav === 'recipes' && selectedRecipe) ? 400 : 0,
     transition: 'margin-right 0.3s',
   };
@@ -835,6 +835,131 @@ function App() {
               )}
             </section>
           )}
+          {activeNav === 'shopping_items' && (
+            <section id="shopping-items" className="w-full">
+              <div className="w-full max-w-4xl">
+                <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Shopping Items</h2>
+                {/* Filters */}
+                <div className="flex flex-wrap gap-4 mb-4 items-end">
+                  <div>
+                    <label className="block text-xs mb-1 text-[#b0b8c1]">Category</label>
+                    <select className="bg-[#181A20] text-white rounded px-2 py-1" value={shoppingCategory} onChange={e => setShoppingCategory(e.target.value)}>
+                      <option value="">All</option>
+                      {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs mb-1 text-[#b0b8c1]">Store</label>
+                    <select className="bg-[#181A20] text-white rounded px-2 py-1" value={shoppingStore} onChange={e => setShoppingStore(e.target.value)}>
+                      <option value="">All</option>
+                      {uniqueStores.map(store => <option key={store} value={store}>{store}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs mb-1 text-[#b0b8c1]">Name</label>
+                    <input className="bg-[#181A20] text-white rounded px-2 py-1" value={shoppingName} onChange={e => setShoppingName(e.target.value)} placeholder="Search name..." />
+                  </div>
+                </div>
+                <div className="overflow-x-auto rounded-[12px] bg-[#2a2a2a] p-4 shadow">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr>
+                        {ingredientColumns.map(col => (
+                          <th
+                            key={col.key}
+                            className="px-4 py-2 text-left text-[#00D4AA] font-bold whitespace-nowrap cursor-pointer select-none"
+                            onClick={() => setShoppingSort(s => s.key === col.key ? { key: col.key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key: col.key, dir: 'asc' })}
+                          >
+                            {col.label}
+                            {shoppingSort.key === col.key && (shoppingSort.dir === 'asc' ? ' ▲' : ' ▼')}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredIngredients.map((ing, idx) => (
+                        <tr key={idx} className="border-b border-[#1a1a1a] hover:bg-[#3a3a3a] transition">
+                          {ingredientColumns.map(col => (
+                            <td key={col.key} className="px-4 py-2 whitespace-nowrap text-white">
+                              {col.key === 'cost' || col.key === 'unit_cost' ? `$${Number(ing[col.key]).toFixed(2)}` :
+                               col.key === 'name' ? (ing.shopping_cart_name || ing.name || '') :
+                               ing[col.key] || ''}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          )}
+          {activeNav === 'cart' && (
+            <section id="cart" className="w-full">
+              <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Shopping Cart</h2>
+              {cart.length === 0 ? (
+                <div className="text-[#b0b8c1]">Your cart is empty.</div>
+              ) : (
+                <div className="space-y-4">
+                  <table className="min-w-full text-sm bg-[#2a2a2a] rounded-[12px] shadow">
+                    <thead>
+                      <tr>
+                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Item</th>
+                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Category</th>
+                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Quantity</th>
+                        <th className="px-4 py-2"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        // Group cart items by category, sort each group alphabetically, then flatten
+                        const groupedByCategory = {};
+                        cart.forEach(item => {
+                          if (!groupedByCategory[item.category]) {
+                            groupedByCategory[item.category] = [];
+                          }
+                          groupedByCategory[item.category].push(item);
+                        });
+                        
+                        // Sort each category group alphabetically by name
+                        Object.keys(groupedByCategory).forEach(category => {
+                          groupedByCategory[category].sort((a, b) => a.name.localeCompare(b.name));
+                        });
+                        
+                        // Flatten back to single array, maintaining category order
+                        const sortedCart = [];
+                        const categoryOrder = ['Appetizer', 'Nigiri', 'Maki Rolls', 'Speciality Rolls'];
+                        categoryOrder.forEach(category => {
+                          if (groupedByCategory[category]) {
+                            sortedCart.push(...groupedByCategory[category]);
+                          }
+                        });
+                        
+                        return sortedCart.map((item, idx) => (
+                          <tr key={idx} className="border-b border-[#1a1a1a]">
+                            <td className="px-4 py-2 font-semibold text-white">{item.name}</td>
+                            <td className="px-4 py-2 text-[#b0b8c1]">{item.category}</td>
+                            <td className="px-4 py-2 text-white">{item.quantity}</td>
+                            <td className="px-4 py-2">
+                              <button className="text-xs text-[#b0b8c1] hover:text-red-400" onClick={() => removeFromCart(item)}>Remove</button>
+                            </td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </table>
+                  <div className="flex justify-end items-center mt-4">
+                    <button
+                      className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#00D4AA] border border-[#00D4AA] transition"
+                      onClick={() => window.print()}
+                    >
+                      Print / Export
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
           {activeNav === 'runbook' && (
             <section id="runbook" className="w-full">
               <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Runbook</h2>
@@ -968,198 +1093,75 @@ function App() {
               )}
             </section>
           )}
-          {activeNav === 'shopping_items' && (
-            <section id="shopping-items" className="w-full">
-              <div className="w-full max-w-4xl">
-                <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Shopping Items</h2>
-                {/* Filters */}
-                <div className="flex flex-wrap gap-4 mb-4 items-end">
-                  <div>
-                    <label className="block text-xs mb-1 text-[#b0b8c1]">Category</label>
-                    <select className="bg-[#181A20] text-white rounded px-2 py-1" value={shoppingCategory} onChange={e => setShoppingCategory(e.target.value)}>
-                      <option value="">All</option>
-                      {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs mb-1 text-[#b0b8c1]">Store</label>
-                    <select className="bg-[#181A20] text-white rounded px-2 py-1" value={shoppingStore} onChange={e => setShoppingStore(e.target.value)}>
-                      <option value="">All</option>
-                      {uniqueStores.map(store => <option key={store} value={store}>{store}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs mb-1 text-[#b0b8c1]">Name</label>
-                    <input className="bg-[#181A20] text-white rounded px-2 py-1" value={shoppingName} onChange={e => setShoppingName(e.target.value)} placeholder="Search name..." />
-                  </div>
-                </div>
-                <div className="overflow-x-auto rounded-[12px] bg-[#2a2a2a] p-4 shadow">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr>
-                        {ingredientColumns.map(col => (
-                          <th
-                            key={col.key}
-                            className="px-4 py-2 text-left text-[#00D4AA] font-bold whitespace-nowrap cursor-pointer select-none"
-                            onClick={() => setShoppingSort(s => s.key === col.key ? { key: col.key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key: col.key, dir: 'asc' })}
-                          >
-                            {col.label}
-                            {shoppingSort.key === col.key && (shoppingSort.dir === 'asc' ? ' ▲' : ' ▼')}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredIngredients.map((ing, idx) => (
-                        <tr key={idx} className="border-b border-[#1a1a1a] hover:bg-[#3a3a3a] transition">
-                          {ingredientColumns.map(col => (
-                            <td key={col.key} className="px-4 py-2 whitespace-nowrap text-white">
-                              {col.key === 'cost' || col.key === 'unit_cost' ? `$${Number(ing[col.key]).toFixed(2)}` :
-                               col.key === 'name' ? (ing.shopping_cart_name || ing.name || '') :
-                               ing[col.key] || ''}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
-          )}
-          {activeNav === 'recipes' && (
-            <section id="recipes" className="w-full">
-              <div className="w-full max-w-4xl">
-                <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Recipes</h2>
-                
-                {/* Recipe Filters */}
-                <div className="flex flex-wrap gap-4 mb-6 items-end">
-                  <div className="flex-1 min-w-[200px]">
-                    <label className="block text-xs mb-1 text-[#b0b8c1]">Search Recipes</label>
-                    <input 
-                      className="w-full bg-[#181A20] text-white rounded px-3 py-2 border border-[#3a3a3a] focus:border-[#00D4AA] focus:outline-none" 
-                      value={recipeFilter} 
-                      onChange={e => setRecipeFilter(e.target.value)} 
-                      placeholder="Search recipes..." 
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs mb-1 text-[#b0b8c1]">Category</label>
-                    <select 
-                      className="bg-[#181A20] text-white rounded px-3 py-2 border border-[#3a3a3a] focus:border-[#00D4AA] focus:outline-none" 
-                      value={selectedCategory} 
-                      onChange={e => setSelectedCategory(e.target.value)}
-                    >
-                      <option value="">All Categories</option>
-                      {recipeCategories.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Recipe Cards */}
-                <div className="grid gap-4">
-                  {filteredRecipes.map(recipe => (
-                    <div 
-                      key={recipe.id} 
-                      className="bg-[#2a2a2a] rounded-[12px] p-4 shadow hover:bg-[#3a3a3a] transition cursor-pointer"
-                      onClick={() => setSelectedRecipe(recipe)}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h3 className="text-lg font-semibold text-[#00D4AA] mb-1">{recipe.name}</h3>
-                          <div className="flex gap-3 text-sm text-[#b0b8c1]">
-                            <span className="bg-[#3a3a3a] px-2 py-1 rounded">{recipe.category}</span>
-                            <span>⏱️ {recipe.prepTime}</span>
-                            <span>📊 {recipe.difficulty}</span>
-                          </div>
-                        </div>
-                        <div className="text-[#b0b8c1] text-sm">
-                          Click to view details →
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {filteredRecipes.length === 0 && (
-                  <div className="text-center py-12">
-                    <div className="text-[#b0b8c1] text-lg">No recipes found</div>
-                    <div className="text-[#b0b8c1] text-sm">Try adjusting your search or category filter</div>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-          {activeNav === 'cart' && (
-            <section id="cart" className="w-full">
-              <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Shopping Cart</h2>
-              {cart.length === 0 ? (
-                <div className="text-[#b0b8c1]">Your cart is empty.</div>
-              ) : (
-                <div className="space-y-4">
-                  <table className="min-w-full text-sm bg-[#2a2a2a] rounded-[12px] shadow">
-                    <thead>
-                      <tr>
-                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Item</th>
-                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Category</th>
-                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Quantity</th>
-                        <th className="px-4 py-2"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(() => {
-                        // Group cart items by category, sort each group alphabetically, then flatten
-                        const groupedByCategory = {};
-                        cart.forEach(item => {
-                          if (!groupedByCategory[item.category]) {
-                            groupedByCategory[item.category] = [];
-                          }
-                          groupedByCategory[item.category].push(item);
-                        });
-                        
-                        // Sort each category group alphabetically by name
-                        Object.keys(groupedByCategory).forEach(category => {
-                          groupedByCategory[category].sort((a, b) => a.name.localeCompare(b.name));
-                        });
-                        
-                        // Flatten back to single array, maintaining category order
-                        const sortedCart = [];
-                        const categoryOrder = ['Appetizer', 'Nigiri', 'Maki Rolls', 'Speciality Rolls'];
-                        categoryOrder.forEach(category => {
-                          if (groupedByCategory[category]) {
-                            sortedCart.push(...groupedByCategory[category]);
-                          }
-                        });
-                        
-                        return sortedCart.map((item, idx) => (
-                          <tr key={idx} className="border-b border-[#1a1a1a]">
-                            <td className="px-4 py-2 font-semibold text-white">{item.name}</td>
-                            <td className="px-4 py-2 text-[#b0b8c1]">{item.category}</td>
-                            <td className="px-4 py-2 text-white">{item.quantity}</td>
-                            <td className="px-4 py-2">
-                              <button className="text-xs text-[#b0b8c1] hover:text-red-400" onClick={() => removeFromCart(item)}>Remove</button>
-                            </td>
-                          </tr>
-                        ));
-                      })()}
-                    </tbody>
-                  </table>
-                  <div className="flex justify-end items-center mt-4">
-                    <button
-                      className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#00D4AA] border border-[#00D4AA] transition"
-                      onClick={() => window.print()}
-                    >
-                      Print / Export
-                    </button>
-                  </div>
-                </div>
-              )}
-            </section>
-          )}
         </div>
       </main>
+      
+      {/* Recipes Page - Full Width */}
+      {activeNav === 'recipes' && (
+        <section id="recipes" className="w-full py-10 px-4" style={{marginRight: '400px'}}>
+          <div className="w-full">
+            <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Recipes</h2>
+            
+            {/* Recipe Filters */}
+            <div className="flex flex-wrap gap-4 mb-6 items-end">
+              <div className="flex-1 min-w-[200px]">
+                <label className="block text-xs mb-1 text-[#b0b8c1]">Search Recipes</label>
+                <input 
+                  className="w-full bg-[#181A20] text-white rounded px-3 py-2 border border-[#3a3a3a] focus:border-[#00D4AA] focus:outline-none" 
+                  value={recipeFilter} 
+                  onChange={e => setRecipeFilter(e.target.value)} 
+                  placeholder="Search recipes..." 
+                />
+              </div>
+              <div>
+                <label className="block text-xs mb-1 text-[#b0b8c1]">Category</label>
+                <select 
+                  className="bg-[#181A20] text-white rounded px-3 py-2 border border-[#3a3a3a] focus:border-[#00D4AA] focus:outline-none" 
+                  value={selectedCategory} 
+                  onChange={e => setSelectedCategory(e.target.value)}
+                >
+                  <option value="">All Categories</option>
+                  {recipeCategories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Recipe Cards */}
+            <div className="grid gap-4">
+              {filteredRecipes.map(recipe => (
+                <div 
+                  key={recipe.id} 
+                  className="bg-[#2a2a2a] rounded-[12px] p-4 shadow hover:bg-[#3a3a3a] transition cursor-pointer"
+                  onClick={() => setSelectedRecipe(recipe)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold text-[#00D4AA] mb-1">{recipe.name}</h3>
+                      <div className="flex gap-3 text-sm text-[#b0b8c1] flex-wrap">
+                        <span className="bg-[#3a3a3a] px-2 py-1 rounded">{recipe.category}</span>
+                        <span>⏱️ {recipe.prepTime}</span>
+                        <span>📊 {recipe.difficulty}</span>
+                      </div>
+                    </div>
+                    <div className="text-[#b0b8c1] text-sm ml-4 flex-shrink-0">
+                      Click to view details →
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {filteredRecipes.length === 0 && (
+              <div className="text-center py-12">
+                <div className="text-[#b0b8c1] text-lg">No recipes found</div>
+                <div className="text-[#b0b8c1] text-sm">Try adjusting your search or category filter</div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
       
       {/* Shopping List Page - Full Width */}
       {activeNav === 'shopping_list' && (
@@ -1401,7 +1403,7 @@ function App() {
       </aside>
       
       {/* Tips Panel (right) - only on runbook page */}
-      <aside className={`tips-panel fixed top-0 right-0 h-full w-[300px] bg-[#2a2a2a] shadow-2xl z-40 p-6 flex flex-col gap-4 rounded-l-[18px] border-l border-[#00D4AA] transition-all duration-300 ${(activeNav === 'runbook' && selectedRunbookItem) ? '' : 'hidden'}`} style={{boxShadow: '0 8px 32px 0 #00D4AA55'}}>
+      <aside className={`tips-panel fixed top-0 right-0 h-full w-[400px] bg-[#2a2a2a] shadow-2xl z-40 p-6 flex flex-col gap-4 rounded-l-[18px] border-l border-[#00D4AA] transition-all duration-300 ${(activeNav === 'runbook' && selectedRunbookItem) ? '' : 'hidden'}`} style={{boxShadow: '0 8px 32px 0 #00D4AA55'}}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-[#00D4AA]">Tips</h2>
           <button 
