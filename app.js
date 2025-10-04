@@ -1006,32 +1006,6 @@ function App() {
             <section id="runbook" className="w-full">
               <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Runbook</h2>
               
-              {/* Filter Buttons */}
-              <div className="mb-6 flex flex-col sm:flex-row items-start gap-4 w-full">
-                <div className="flex gap-3">
-                  <button
-                    className={`px-4 py-2 rounded-[12px] font-medium transition-all duration-200 text-sm ${
-                      runbookFilter === 'beginner' 
-                        ? 'bg-[#00D4AA] text-[#1a1a1a] shadow-lg' 
-                        : 'bg-[#2a2a2a] text-[#b0b8c1] hover:bg-[#3a3a3a] hover:shadow-md'
-                    }`}
-                    onClick={() => setRunbookFilter('beginner')}
-                  >
-                    Beginner Steps
-                  </button>
-                  <button
-                    className={`px-4 py-2 rounded-[12px] font-medium transition-all duration-200 text-sm ${
-                      runbookFilter === 'advanced' 
-                        ? 'bg-[#00D4AA] text-[#1a1a1a] shadow-lg' 
-                        : 'bg-[#2a2a2a] text-[#b0b8c1] hover:bg-[#3a3a3a] hover:shadow-md'
-                    }`}
-                    onClick={() => setRunbookFilter('advanced')}
-                  >
-                    Advanced Steps
-                  </button>
-                </div>
-                
-              </div>
               
               {loading && <div className="text-[#00D4AA]">Loading runbook...</div>}
               {error && <div className="text-red-400">{error}</div>}
@@ -1091,16 +1065,16 @@ function App() {
                             return 999;
                           };
                           
-                          // Filter items based on selected filter
+                          // Filter items to show only beginner steps
                           const filteredRunbook = runbook.filter(item => {
-                            if (runbookFilter === 'beginner') {
-                              return item.has_beginner;
-                            } else {
-                              return item.has_advanced;
-                            }
+                            return item.has_beginner;
                           });
                           
                           const sorted = [...filteredRunbook].sort((a, b) => {
+                            // Use sort_order if available, otherwise fall back to timeline order
+                            if (a.sort_order !== undefined && b.sort_order !== undefined) {
+                              return a.sort_order - b.sort_order;
+                            }
                             const aOrder = getTimelineOrder(a.timeline);
                             const bOrder = getTimelineOrder(b.timeline);
                             return aOrder - bOrder;
@@ -1108,7 +1082,7 @@ function App() {
                           return sorted.map((item, idx) => {
                             const globalIdx = runbook.indexOf(item);
                             const isSelected = selectedRunbookItem === item;
-                            const stepText = runbookFilter === 'beginner' ? item.beginner_steps : item.advanced_steps;
+                            const stepText = item.beginner_steps;
                             return (
                               <tr
                                 key={idx}

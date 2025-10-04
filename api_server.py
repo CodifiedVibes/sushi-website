@@ -113,33 +113,10 @@ def get_runbook():
     try:
         cursor = conn.execute("""
             SELECT * FROM runbook_items 
-            ORDER BY sort_order, timeline
+            ORDER BY sort_order ASC, timeline
         """)
         
         runbook_items = [dict(row) for row in cursor.fetchall()]
-        
-        # Custom sorting function for timeline
-        def timeline_sort_key(item):
-            timeline = item['timeline']
-            if timeline == 'T-0':
-                return 0
-            elif 'days' in timeline:
-                # Extract number of days (e.g., "T-5 days" -> 5)
-                days = int(timeline.split('-')[1].split()[0])
-                return -days  # Negative so T-5 days comes before T-1 day
-            elif 'hours' in timeline:
-                # Extract number of hours (e.g., "T-4 hours" -> 4, "T-1.5 hours" -> 1.5)
-                hours = float(timeline.split('-')[1].split()[0])
-                return hours  # Positive so T-1 hour comes before T-4 hours
-            elif 'min' in timeline:
-                # Extract number of minutes (e.g., "T-30 min" -> 30)
-                minutes = int(timeline.split('-')[1].split()[0])
-                return minutes  # Positive so T-15 min comes before T-30 min
-            else:
-                return 999  # Unknown format goes to end
-        
-        # Sort by timeline
-        runbook_items.sort(key=timeline_sort_key)
         
         return jsonify(runbook_items)
         

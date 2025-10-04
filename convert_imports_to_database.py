@@ -179,21 +179,30 @@ def import_runbook_from_csv(db_path, csv_file):
             
             for row in reader:
                 # Convert "x" values to boolean for has_beginner and has_advanced
-                has_beginner = row.get('beginner_steps', '').strip() == 'x'
-                has_advanced = row.get('advanced_steps', '').strip() == 'x'
+                has_beginner = row.get('has_beginner', '').strip() == '1'
+                has_advanced = row.get('has_advanced', '').strip() == '1'
+                
+                # Get sort order, default to 0 if not provided
+                sort_order = 0
+                if 'sort_order' in row and row.get('sort_order', '').strip():
+                    try:
+                        sort_order = int(row.get('sort_order', '0').strip())
+                    except ValueError:
+                        sort_order = 0
                 
                 cursor.execute("""
-                    INSERT INTO runbook_items (timeline, activity, beginner_steps, advanced_steps, estimated_duration, notes, has_beginner, has_advanced)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO runbook_items (timeline, activity, beginner_steps, advanced_steps, estimated_duration, notes, has_beginner, has_advanced, sort_order)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     row.get('timeline', '').strip(),
                     row.get('activity', '').strip(),
-                    row.get('Beginner Steps', '').strip(),
-                    row.get('Advanced Steps', '').strip(),
-                    row.get('Estimated Duration', '').strip(),
-                    row.get('Notes', '').strip(),
+                    row.get('beginner_steps', '').strip(),
+                    row.get('advanced_steps', '').strip(),
+                    row.get('estimated_duration', '').strip(),
+                    row.get('notes', '').strip(),
                     has_beginner,
-                    has_advanced
+                    has_advanced,
+                    sort_order
                 ))
                 runbook_items_imported += 1
         

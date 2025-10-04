@@ -117,7 +117,8 @@ def export_runbook_to_csv(db_path, output_file):
         estimated_duration,
         notes,
         has_beginner,
-        has_advanced
+        has_advanced,
+        sort_order
     FROM runbook_items
     ORDER BY sort_order, timeline
     """
@@ -127,7 +128,7 @@ def export_runbook_to_csv(db_path, output_file):
     
     # Write to CSV
     if rows:
-        fieldnames = ['timeline', 'activity', 'beginner_steps', 'advanced_steps', 'estimated_duration', 'notes', 'has_beginner', 'has_advanced']
+        fieldnames = ['timeline', 'activity', 'beginner_steps', 'advanced_steps', 'estimated_duration', 'notes', 'has_beginner', 'has_advanced', 'sort_order']
         with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
@@ -140,7 +141,8 @@ def export_runbook_to_csv(db_path, output_file):
                     'estimated_duration': row['estimated_duration'] or '',
                     'notes': row['notes'] or '',
                     'has_beginner': row['has_beginner'],
-                    'has_advanced': row['has_advanced']
+                    'has_advanced': row['has_advanced'],
+                    'sort_order': row['sort_order']
                 })
         print(f"✅ Exported {len(rows)} runbook items to {output_file}")
     
