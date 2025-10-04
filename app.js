@@ -412,6 +412,51 @@ function App() {
       storage: 'Serve immediately',
       prepTime: '15 minutes',
       difficulty: 1
+    },
+    {
+      id: 3,
+      name: 'Zuke Marinade',
+      category: 'Sauce',
+      description: 'Soaking sauce used to infuse sashimi-grade fish (like salmon or tuna) with umami and sweetness to tenderize it for a richer flavor.',
+      ingredients: [
+        { name: 'Water', amount: '50g' },
+        { name: 'Soy sauce', amount: '1 Tbsp' },
+        { name: 'Brown sugar', amount: '1 Tbsp' },
+        { name: 'Sesame oil', amount: '1 tsp' },
+        { name: 'Dashi powder', amount: '¼ tsp' }
+      ],
+      instructions: [
+        'In a small saucepan, combine water, soy sauce, brown sugar, and dashi powder; heat gently over low heat while stirring until the sugar fully dissolves (about 2-3 minutes).',
+        'Remove from heat, stir in sesame oil, put in refridge and let cool completely before using.',
+        'Example: Making Salmon Zuke - submerge the salmon in the cooled zuke marinade in a shallow dish; refrigerate for 15-30 minutes. Remove salmon, pat dry lightly, and serve over rice or as sashimi. Discard used marinade.'
+      ],
+      storage: 'Refrigerate and use within 1 week',
+      prepTime: '10 minutes',
+      difficulty: 1
+    },
+    {
+      id: 4,
+      name: 'Spicy Mayo',
+      category: 'Sauce',
+      description: 'This is for a more specialized version. The measurements are for general guidance.. you\'ll probably need to play with the ratios until you like it. Also, you could just do japanese mayo and siracha combination to keep it simple.',
+      ingredients: [
+        { name: 'Japanese mayonnaise', amount: '6 oz' },
+        { name: 'Gochujang pepper paste', amount: '3 Tbsp' },
+        { name: 'Sesame oil', amount: '3 drops' },
+        { name: 'Hot pepper powder', amount: '3 Tbsp' },
+        { name: 'Siracha', amount: 'Few drops' },
+        { name: 'Salt', amount: 'to taste' },
+        { name: 'Water', amount: 'as needed (for thinning)' }
+      ],
+      instructions: [
+        'In a small bowl, combine Japanese mayonnaise, gochujang, and hot pepper powder; mix until smooth.',
+        'Add sesame oil (don\'t overdue this one) and stir to incorporate. Taste and add a pinch of salt if needed.',
+        'If the sauce is too thick, add water (1 tsp at a time) to reach a drizzleable consistency.',
+        'For example, use as a topping for a spicy salmon roll or as a dipping sauce.'
+      ],
+      storage: 'Store refrigerated in an airtight container for up to 1 week',
+      prepTime: '5 minutes',
+      difficulty: 2
     }
   ]);
   const [recipeFilter, setRecipeFilter] = useState('');
