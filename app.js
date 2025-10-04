@@ -567,11 +567,11 @@ function App() {
                   <div className="flex items-center gap-4">
                     <div className="flex gap-2">
                       {[
+                        { key: 'all', label: 'All' },
                         { key: 'top', label: 'Top Ranked' },
                         { key: 'salmon', label: 'Salmon Favorites' },
                         { key: 'tuna', label: 'Tuna Favorites' },
                         { key: 'veggie', label: 'Veggie Favorites' },
-                        { key: 'all', label: 'All' },
                       ].map(f => (
                         <button
                           key={f.key}
@@ -661,14 +661,21 @@ function App() {
                         .some(ing => (ing||'').toLowerCase().includes('tuna')))
                     );
                   } else if (menuFilter === 'veggie') {
-                    allItems = allItems.filter(i =>
-                      ([...(i.ingredients_inside||[]), ...(i.ingredients_on_top||[])]
-                        .every(ing => {
-                          const ingName = (ing||'').toLowerCase();
-                          return ingName.includes('avocado') || ingName.includes('cucumber') || ingName.includes('asparagus') || ingName.includes('sweet potato') || ingName.includes('sprouts') || ingName.includes('jalapeno') || ingName.includes('cilantro') || ingName.includes('lime') || ingName.includes('chives');
-                        }) && allItems.length > 0
-                      )
-                    );
+                    // Get all Meat & Fish ingredients for filtering
+                    const meatFishIngredients = new Set();
+                    Object.values(ingredients).flat().forEach(ing => {
+                      if (ing.category === 'Meat & Fish') {
+                        meatFishIngredients.add(ing.name.toLowerCase());
+                      }
+                    });
+                    
+                    allItems = allItems.filter(i => {
+                      const allIngredients = [...(i.ingredients_inside||[]), ...(i.ingredients_on_top||[])];
+                      // Check if any ingredient is in the Meat & Fish category
+                      return !allIngredients.some(ing => 
+                        meatFishIngredients.has((ing||'').toLowerCase())
+                      );
+                    });
                   }
                   // Sort by category order
                   const CATEGORY_ORDER = ['Appetizer', 'Nigiri', 'Maki Rolls', 'Speciality Rolls'];
