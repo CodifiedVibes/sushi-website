@@ -72,6 +72,18 @@ CREATE TABLE runbook_items (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Event menus table for shareable sushi night menus
+CREATE TABLE event_menus (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    unique_id TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    description TEXT,
+    menu_data TEXT NOT NULL, -- JSON string of selected menu items
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Future tables for enhanced features
 -- Users table (for future authentication)
 CREATE TABLE users (
@@ -121,6 +133,8 @@ CREATE INDEX idx_runbook_timeline ON runbook_items(timeline);
 CREATE INDEX idx_orders_user ON orders(user_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_order_items_order ON order_items(order_id);
+CREATE INDEX idx_event_menus_unique_id ON event_menus(unique_id);
+CREATE INDEX idx_event_menus_expires ON event_menus(expires_at);
 
 -- Insert default categories
 INSERT INTO categories (name, color, sort_order) VALUES 

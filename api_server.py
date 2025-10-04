@@ -8,7 +8,8 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import sqlite3
 import json
-from datetime import datetime
+import uuid
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend
@@ -63,44 +64,35 @@ def get_menu():
             
             item['ingredients_inside'] = ingredients_inside
             item['ingredients_on_top'] = ingredients_on_top
-            
             menu_items.append(item)
         
-        # Group by category
-        menu_by_category = {}
-        for item in menu_items:
-            category = item['category']
-            if category not in menu_by_category:
-                menu_by_category[category] = []
-            menu_by_category[category].append(item)
-        
-        return jsonify(menu_by_category)
+        return jsonify(menu_items)
         
     finally:
         conn.close()
 
 @app.route('/api/ingredients', methods=['GET'])
 def get_ingredients():
-    """Get all ingredients"""
+    """Get all ingredients grouped by category"""
     conn = get_db_connection()
     
     try:
         cursor = conn.execute("""
-            SELECT * FROM ingredients 
+            SELECT name, category, store, cost, quantity, unit_cost, brand, 
+                   shopping_cart_name, uses_per_purchase
+            FROM ingredients
             ORDER BY category, name
         """)
         
-        ingredients = [dict(row) for row in cursor.fetchall()]
+        ingredients = {}
+        for row in cursor.fetchall():
+            ing = dict(row)
+            category = ing['category']
+            if category not in ingredients:
+                ingredients[category] = []
+            ingredients[category].append(ing)
         
-        # Group by category
-        ingredients_by_category = {}
-        for ingredient in ingredients:
-            category = ingredient['category']
-            if category not in ingredients_by_category:
-                ingredients_by_category[category] = []
-            ingredients_by_category[category].append(ingredient)
-        
-        return jsonify(ingredients_by_category)
+        return jsonify(ingredients)
         
     finally:
         conn.close()
@@ -130,8 +122,8 @@ def get_categories():
     
     try:
         cursor = conn.execute("""
-            SELECT * FROM categories 
-            ORDER BY sort_order
+            SELECT * FROM categories
+            ORDER BY sort_order, name
         """)
         
         categories = [dict(row) for row in cursor.fetchall()]
@@ -148,10 +140,11 @@ def get_menu_item(item_id):
     try:
         cursor = conn.execute("""
             SELECT 
-                mi.*, c.name as category, c.color as category_color
+                mi.id, mi.name, mi.description, mi.price, mi.image_path,
+                c.name as category, c.color as category_color
             FROM menu_items mi
             JOIN categories c ON mi.category_id = c.id
-            WHERE mi.id = ?
+            WHERE mi.id = ? AND mi.is_active = 1
         """, (item_id,))
         
         row = cursor.fetchone()
@@ -160,7 +153,7 @@ def get_menu_item(item_id):
         
         item = dict(row)
         
-        # Get ingredients
+        # Get ingredients for this menu item
         cursor2 = conn.execute("""
             SELECT 
                 i.name, i.category as ingredient_category,
@@ -191,8 +184,8 @@ def get_menu_item(item_id):
 
 @app.route('/api/search', methods=['GET'])
 def search_menu():
-    """Search menu items by name or ingredients"""
-    query = request.args.get('q', '').lower()
+    """Search menu items by name or description"""
+    query = request.args.get('q', '').strip()
     if not query:
         return jsonify([])
     
@@ -200,49 +193,50 @@ def search_menu():
     
     try:
         cursor = conn.execute("""
-            SELECT DISTINCT
-                mi.id, mi.name, mi.description, mi.price,
+            SELECT 
+                mi.id, mi.name, mi.description, mi.price, mi.image_path,
                 c.name as category, c.color as category_color
             FROM menu_items mi
             JOIN categories c ON mi.category_id = c.id
-            JOIN menu_item_ingredients mii ON mi.id = mii.menu_item_id
-            JOIN ingredients i ON mii.ingredient_id = i.id
             WHERE mi.is_active = 1 
-            AND (LOWER(mi.name) LIKE ? OR LOWER(i.name) LIKE ?)
-            ORDER BY c.sort_order, mi.name
+            AND (mi.name LIKE ? OR mi.description LIKE ?)
+            ORDER BY c.sort_order, mi.sort_order, mi.name
         """, (f'%{query}%', f'%{query}%'))
         
-        results = [dict(row) for row in cursor.fetchall()]
-        return jsonify(results)
+        menu_items = []
+        for row in cursor.fetchall():
+            item = dict(row)
+            
+            # Get ingredients for this menu item
+            cursor2 = conn.execute("""
+                SELECT 
+                    i.name, i.category as ingredient_category,
+                    mii.quantity, mii.position
+                FROM menu_item_ingredients mii
+                JOIN ingredients i ON mii.ingredient_id = i.id
+                WHERE mii.menu_item_id = ?
+                ORDER BY mii.position, mii.sort_order
+            """, (item['id'],))
+            
+            ingredients_inside = []
+            ingredients_on_top = []
+            
+            for ing_row in cursor2.fetchall():
+                ing = dict(ing_row)
+                if ing['position'] == 'inside':
+                    ingredients_inside.append(ing['name'])
+                else:
+                    ingredients_on_top.append(ing['name'])
+            
+            item['ingredients_inside'] = ingredients_inside
+            item['ingredients_on_top'] = ingredients_on_top
+            menu_items.append(item)
+        
+        return jsonify(menu_items)
         
     finally:
         conn.close()
 
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.now().isoformat(),
-        'database': 'connected'
-    })
-
-if __name__ == '__main__':
-    print("Starting Sushi Restaurant API Server...")
-    print("API will be available at: http://localhost:5001")
-    print("Available endpoints:")
-    print("  GET /api/menu - Get all menu items")
-    print("  GET /api/ingredients - Get all ingredients")
-    print("  GET /api/runbook - Get runbook items")
-    print("  GET /api/categories - Get categories")
-    print("  GET /api/menu/<id> - Get specific menu item")
-    print("  GET /api/search?q=<query> - Search menu items")
-    print("  GET /api/recipes - Get all recipes")
-    print("  GET /api/recipes/<id> - Get specific recipe")
-    print("  GET /api/recipes/category/<category> - Get recipes by category")
-    print("  GET /api/health - Health check")
-    
-    app.run(debug=True, host='0.0.0.0', port=5001) 
 @app.route('/api/recipes', methods=['GET'])
 def get_recipes():
     """Get all recipes"""
@@ -250,7 +244,7 @@ def get_recipes():
     
     try:
         cursor = conn.execute("""
-            SELECT * FROM recipes 
+            SELECT * FROM recipes
             ORDER BY category, name
         """)
         
@@ -274,7 +268,7 @@ def get_recipes():
 
 @app.route('/api/recipes/<int:recipe_id>', methods=['GET'])
 def get_recipe(recipe_id):
-    """Get specific recipe by ID"""
+    """Get a specific recipe by ID"""
     conn = get_db_connection()
     
     try:
@@ -330,3 +324,192 @@ def get_recipes_by_category(category):
         
     finally:
         conn.close()
+
+# Event Menu API endpoints
+@app.route('/api/event-menus', methods=['POST'])
+def create_event_menu():
+    """Create a new event menu"""
+    conn = get_db_connection()
+    
+    try:
+        data = request.get_json()
+        if not data or not data.get('name') or not data.get('menu_data'):
+            return jsonify({'error': 'Name and menu_data are required'}), 400
+        
+        # Generate unique ID
+        unique_id = str(uuid.uuid4())[:8]  # Short ID for easy sharing
+        
+        # Set expiration to 30 days from now
+        expires_at = datetime.now() + timedelta(days=30)
+        
+        cursor = conn.execute("""
+            INSERT INTO event_menus (unique_id, name, description, menu_data, expires_at)
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            unique_id,
+            data['name'],
+            data.get('description', ''),
+            json.dumps(data['menu_data']),
+            expires_at
+        ))
+        
+        conn.commit()
+        
+        return jsonify({
+            'id': cursor.lastrowid,
+            'unique_id': unique_id,
+            'name': data['name'],
+            'description': data.get('description', ''),
+            'expires_at': expires_at.isoformat()
+        }), 201
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/event-menus/<unique_id>', methods=['GET'])
+def get_event_menu(unique_id):
+    """Get an event menu by unique ID"""
+    conn = get_db_connection()
+    
+    try:
+        cursor = conn.execute("""
+            SELECT * FROM event_menus 
+            WHERE unique_id = ? AND expires_at > datetime('now')
+        """, (unique_id,))
+        
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({'error': 'Event menu not found or expired'}), 404
+        
+        event_menu = dict(row)
+        event_menu['menu_data'] = json.loads(event_menu['menu_data'])
+        
+        return jsonify(event_menu)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/event-menus/<unique_id>', methods=['PUT'])
+def update_event_menu(unique_id):
+    """Update an event menu"""
+    conn = get_db_connection()
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Check if event menu exists and is not expired
+        cursor = conn.execute("""
+            SELECT id FROM event_menus 
+            WHERE unique_id = ? AND expires_at > datetime('now')
+        """, (unique_id,))
+        
+        if not cursor.fetchone():
+            return jsonify({'error': 'Event menu not found or expired'}), 404
+        
+        # Update the menu data
+        update_fields = []
+        update_values = []
+        
+        if 'name' in data:
+            update_fields.append('name = ?')
+            update_values.append(data['name'])
+        
+        if 'description' in data:
+            update_fields.append('description = ?')
+            update_values.append(data['description'])
+        
+        if 'menu_data' in data:
+            update_fields.append('menu_data = ?')
+            update_values.append(json.dumps(data['menu_data']))
+        
+        update_fields.append('updated_at = CURRENT_TIMESTAMP')
+        update_values.append(unique_id)
+        
+        cursor = conn.execute(f"""
+            UPDATE event_menus 
+            SET {', '.join(update_fields)}
+            WHERE unique_id = ?
+        """, update_values)
+        
+        conn.commit()
+        
+        return jsonify({'message': 'Event menu updated successfully'})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/event-menus/<unique_id>', methods=['DELETE'])
+def delete_event_menu(unique_id):
+    """Delete an event menu"""
+    conn = get_db_connection()
+    
+    try:
+        cursor = conn.execute("""
+            DELETE FROM event_menus WHERE unique_id = ?
+        """, (unique_id,))
+        
+        if cursor.rowcount == 0:
+            return jsonify({'error': 'Event menu not found'}), 404
+        
+        conn.commit()
+        return jsonify({'message': 'Event menu deleted successfully'})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/event-menus', methods=['GET'])
+def list_event_menus():
+    """List all non-expired event menus (for admin/debug purposes)"""
+    conn = get_db_connection()
+    
+    try:
+        cursor = conn.execute("""
+            SELECT id, unique_id, name, description, created_at, expires_at
+            FROM event_menus 
+            WHERE expires_at > datetime('now')
+            ORDER BY created_at DESC
+        """)
+        
+        event_menus = [dict(row) for row in cursor.fetchall()]
+        return jsonify(event_menus)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+
+if __name__ == '__main__':
+    print("Starting Sushi Restaurant API Server...")
+    print("API will be available at: http://localhost:5001")
+    print("Available endpoints:")
+    print("  GET /api/menu - Get all menu items")
+    print("  GET /api/ingredients - Get all ingredients")
+    print("  GET /api/runbook - Get runbook items")
+    print("  GET /api/categories - Get categories")
+    print("  GET /api/menu/<id> - Get specific menu item")
+    print("  GET /api/search?q=<query> - Search menu items")
+    print("  GET /api/recipes - Get all recipes")
+    print("  GET /api/recipes/<id> - Get specific recipe")
+    print("  GET /api/recipes/category/<category> - Get recipes by category")
+    print("  GET /api/health - Health check")
+    print("  POST /api/event-menus - Create event menu")
+    print("  GET /api/event-menus/<id> - Get event menu")
+    print("  PUT /api/event-menus/<id> - Update event menu")
+    print("  DELETE /api/event-menus/<id> - Delete event menu")
+    print("  GET /api/event-menus - List all event menus")
+    app.run(debug=True, host='0.0.0.0', port=5001)

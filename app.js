@@ -13,6 +13,7 @@ const NAV_OPTIONS = [
   { label: 'Shopping Items', key: 'shopping_items' },
   { label: 'Shopping List', key: 'shopping_list' },
   { label: 'Recipes', key: 'recipes' },
+  { label: 'My Events', key: 'my_events' },
 ];
 
 const COLORS = {
@@ -211,6 +212,59 @@ function App() {
   const [cart, setCart] = useState([]); // [{...item, quantity: N}]
   const [navOpen, setNavOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('menu');
+  
+  // URL routing state
+  const [currentEventId, setCurrentEventId] = useState(null);
+  
+  // Function to extract event ID from URL
+  const extractEventIdFromUrl = () => {
+    const path = window.location.pathname;
+    const match = path.match(/^\/event\/([a-zA-Z0-9]+)$/);
+    return match ? match[1] : null;
+  };
+  
+  // Function to load event menu by ID
+  const loadEventMenuFromUrl = async (eventId) => {
+    try {
+      console.log('Loading event menu from URL:', eventId);
+      const eventMenu = await getEventMenu(eventId);
+      setSelectedEventMenu(eventMenu);
+      setCart(eventMenu.menu_data || []);
+      setActiveNav('menu');
+      setCurrentEventId(eventId);
+      console.log('Event menu loaded successfully:', eventMenu.name);
+    } catch (error) {
+      console.error('Failed to load event menu from URL:', error);
+      // Don't show alert for URL-based loading, just log the error
+    }
+  };
+  
+  // Check URL on component mount and when URL changes
+  useEffect(() => {
+    const eventId = extractEventIdFromUrl();
+    if (eventId && eventId !== currentEventId) {
+      loadEventMenuFromUrl(eventId);
+    }
+  }, []);
+  
+  // Listen for URL changes (back/forward buttons)
+  useEffect(() => {
+    const handlePopState = () => {
+      const eventId = extractEventIdFromUrl();
+      if (eventId && eventId !== currentEventId) {
+        loadEventMenuFromUrl(eventId);
+      } else if (!eventId && currentEventId) {
+        // Navigated away from event URL
+        setCurrentEventId(null);
+        setSelectedEventMenu(null);
+        setCart([]);
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentEventId]);
+  
   // Remove shoppingMode state
   // const [shoppingMode, setShoppingMode] = useState(false);
   const [runbookDone, setRunbookDone] = useState([]); // array of indices
@@ -229,7 +283,18 @@ function App() {
     ])
       .then(responses => Promise.all(responses.map(res => res.json())))
       .then(([menuData, ingredientsData, runbookData]) => {
-        setMenu(menuData || {});
+        // Convert menu array to object grouped by category
+        const menuByCategory = {};
+        if (menuData && Array.isArray(menuData)) {
+          menuData.forEach(item => {
+            const category = item.category;
+            if (!menuByCategory[category]) {
+              menuByCategory[category] = [];
+            }
+            menuByCategory[category].push(item);
+          });
+        }
+        setMenu(menuByCategory);
         setIngredients(ingredientsData || {});
         setRunbook(runbookData || []);
         setLoading(false);
@@ -361,6 +426,120 @@ function App() {
   // Shopping List state
   const [shoppingListSort, setShoppingListSort] = useState({ key: 'store', dir: 'asc' });
   const [alreadyHaveIngredients, setAlreadyHaveIngredients] = useState(new Set());
+
+  // Event Menus state
+  const [eventMenus, setEventMenus] = useState([]);
+  const [selectedEventMenu, setSelectedEventMenu] = useState(null);
+  const [showCreateEventMenu, setShowCreateEventMenu] = useState(false);
+  const [eventMenuName, setEventMenuName] = useState('');
+  const [eventMenuDescription, setEventMenuDescription] = useState('');
+
+  // Event Menu API functions
+  const createEventMenu = async (name, description, menuData) => {
+    try {
+      console.log('Creating event menu with data:', { name, description, menuData });
+      
+      const response = await fetch('http://localhost:5001/api/event-menus', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          description,
+          menu_data: menuData
+        })
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Failed to create event menu: ${response.status} ${errorText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Success result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error creating event menu:', error);
+      throw error;
+    }
+  };
+
+  const getEventMenu = async (uniqueId) => {
+    try {
+      const response = await fetch(`http://localhost:5001/api/event-menus/${uniqueId}`);
+      
+      if (!response.ok) {
+        throw new Error('Event menu not found');
+      }
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Error fetching event menu:', error);
+      throw error;
+    }
+  };
+
+  const updateEventMenu = async (uniqueId, data) => {
+    try {
+      const response = await fetch(`http://localhost:5001/api/event-menus/${uniqueId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update event menu');
+      }
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Error updating event menu:', error);
+      throw error;
+    }
+  };
+
+  const deleteEventMenu = async (uniqueId) => {
+    try {
+      const response = await fetch(`http://localhost:5001/api/event-menus/${uniqueId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete event menu');
+      }
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Error deleting event menu:', error);
+      throw error;
+    }
+  };
+
+  const listEventMenus = async () => {
+    try {
+      const response = await fetch('http://localhost:5001/api/event-menus');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch event menus');
+      }
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Error fetching event menus:', error);
+      throw error;
+    }
+  };
 
   // Recipes state
   const [selectedRecipe, setSelectedRecipe] = useState(null);
@@ -1164,6 +1343,103 @@ function App() {
         </div>
       </main>
       
+      {/* My Events Page - Full Width */}
+      {activeNav === 'my_events' && (
+        <section id="my-events" className="w-full py-10 px-4">
+          <div className="w-full">
+            <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">My Events</h2>
+            
+            <div className="bg-[#2a2a2a] rounded-[12px] p-6 mb-6">
+              <h3 className="text-lg font-semibold mb-4 text-white">Lookup Event Menu</h3>
+              <div className="flex gap-4 items-end">
+                <div className="flex-1">
+                  <label className="block text-sm mb-2 text-[#b0b8c1]">Event ID</label>
+                  <input
+                    type="text"
+                    placeholder="Enter event ID (e.g., a1b2c3d4)"
+                    className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white placeholder-[#b0b8c1] focus:border-[#00D4AA] focus:outline-none"
+                    onKeyPress={async (e) => {
+                      if (e.key === 'Enter') {
+                        const eventId = e.target.value.trim();
+                        if (eventId) {
+                          try {
+                            const eventMenu = await getEventMenu(eventId);
+                            setSelectedEventMenu(eventMenu);
+                            setCart(eventMenu.menu_data || []);
+                            setActiveNav('menu');
+                            setCurrentEventId(eventId);
+                            // Update URL to reflect the loaded event
+                            window.history.pushState({}, '', `/event/${eventId}`);
+                          } catch (error) {
+                            alert('Event menu not found or expired');
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                <button
+                  onClick={async () => {
+                    const input = document.querySelector('input[placeholder*="Enter event ID"]');
+                    const eventId = input.value.trim();
+                    if (eventId) {
+                      try {
+                        const eventMenu = await getEventMenu(eventId);
+                        setSelectedEventMenu(eventMenu);
+                        setCart(eventMenu.menu_data || []);
+                        setActiveNav('menu');
+                        setCurrentEventId(eventId);
+                        // Update URL to reflect the loaded event
+                        window.history.pushState({}, '', `/event/${eventId}`);
+                      } catch (error) {
+                        alert('Event menu not found or expired');
+                      }
+                    }
+                  }}
+                  className="px-4 py-2 bg-[#00D4AA] hover:bg-[#00B894] text-white rounded-[8px] font-semibold transition-colors"
+                >
+                  Load Event
+                </button>
+              </div>
+            </div>
+
+            {selectedEventMenu && (
+              <div className="bg-[#2a2a2a] rounded-[12px] p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white">{selectedEventMenu.name}</h3>
+                  <button
+                    onClick={() => {
+                      setSelectedEventMenu(null);
+                      setCart([]);
+                      setCurrentEventId(null);
+                      // Reset URL to home page
+                      window.history.pushState({}, '', '/');
+                    }}
+                    className="text-[#b0b8c1] hover:text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
+                {selectedEventMenu.description && (
+                  <p className="text-[#b0b8c1] mb-4">{selectedEventMenu.description}</p>
+                )}
+                <div className="text-sm text-[#b0b8c1] mb-4">
+                  Created: {new Date(selectedEventMenu.created_at).toLocaleDateString()}
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-md font-semibold text-[#00D4AA]">Menu Items:</h4>
+                  {getCartSummary(selectedEventMenu.menu_data || []).map((item, idx) => (
+                    <div key={idx} className="bg-[#1a1a1a] rounded-[8px] px-3 py-2 text-white text-sm">
+                      {item.count}x {item.name} ({item.category})
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Recipes Page - Full Width */}
       {activeNav === 'recipes' && (
         <section id="recipes" className="w-full py-10 px-4" style={{marginRight: '400px'}}>
@@ -1432,7 +1708,16 @@ function App() {
       )}
       {/* Shopping Cart (right) - only on menu page */}
       <aside className={`shopping-cart fixed top-0 right-0 h-full w-[300px] bg-[#2a2a2a] shadow-2xl z-40 p-6 flex flex-col gap-4 rounded-l-[18px] border-l border-[#00D4AA] animate-float-cart transition-all duration-300 ${(activeNav === 'menu' && cart.length > 0) ? '' : 'hidden'}`} style={{boxShadow: '0 8px 32px 0 #00D4AA55'}}>
-        <h2 className="text-xl font-bold mb-2 text-[#00D4AA]">Shopping Cart</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl font-bold text-[#00D4AA]">Shopping Cart</h2>
+          <button
+            onClick={() => setShowCreateEventMenu(true)}
+            className="bg-[#00D4AA] hover:bg-[#00B894] text-white px-3 py-1 rounded-[8px] text-sm font-semibold transition-colors"
+            title="Create Event Menu"
+          >
+            📅 Event
+          </button>
+        </div>
         {/* Top: Menu item summary */}
         <div className="mb-4">
           {getCartSummary(cart).length === 0 && <div className="text-[#b0b8c1] italic">No items selected.</div>}
@@ -1588,6 +1873,158 @@ function App() {
           </div>
         )}
       </aside>
+
+      {/* Create Event Menu Modal */}
+      {showCreateEventMenu && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#2a2a2a] rounded-[18px] p-6 w-full max-w-md mx-4 border border-[#00D4AA]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-[#00D4AA]">Create Event Menu</h2>
+              <button
+                className="text-[#b0b8c1] hover:text-white text-2xl"
+                onClick={() => {
+                  setShowCreateEventMenu(false);
+                  setEventMenuName('');
+                  setEventMenuDescription('');
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-white mb-2">Event Name</label>
+                <input
+                  type="text"
+                  value={eventMenuName}
+                  onChange={(e) => setEventMenuName(e.target.value)}
+                  placeholder="e.g., Sushi Night Oct 10"
+                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white placeholder-[#b0b8c1] focus:border-[#00D4AA] focus:outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-white mb-2">Description (Optional)</label>
+                <textarea
+                  value={eventMenuDescription}
+                  onChange={(e) => setEventMenuDescription(e.target.value)}
+                  placeholder="Add a description for your event..."
+                  rows={3}
+                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white placeholder-[#b0b8c1] focus:border-[#00D4AA] focus:outline-none resize-none"
+                />
+              </div>
+              
+              <div className="bg-[#1a1a1a] rounded-[8px] p-3">
+                <div className="text-sm text-[#b0b8c1] mb-2">Selected Items ({cart.length})</div>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {getCartSummary(cart).map((item, idx) => (
+                    <div key={idx} className="text-xs text-white">
+                      {item.count}x {item.name}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowCreateEventMenu(false);
+                    setEventMenuName('');
+                    setEventMenuDescription('');
+                  }}
+                  className="flex-1 px-4 py-2 bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white rounded-[8px] font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!eventMenuName.trim()) {
+                      alert('Please enter an event name');
+                      return;
+                    }
+                    
+                    if (cart.length === 0) {
+                      alert('Please add items to your cart first');
+                      return;
+                    }
+                    
+                    console.log('Cart contents:', cart);
+                    console.log('Cart length:', cart.length);
+                    
+                    // Debug: Check if cart can be serialized
+                    try {
+                      const serializedCart = JSON.stringify(cart);
+                      console.log('Cart serialization successful, length:', serializedCart.length);
+                    } catch (serializeError) {
+                      console.error('Cart serialization failed:', serializeError);
+                      alert('Cart data cannot be serialized. Please try again.');
+                      return;
+                    }
+                    
+                    try {
+                      const result = await createEventMenu(
+                        eventMenuName.trim(),
+                        eventMenuDescription.trim(),
+                        cart
+                      );
+                      
+                      const shareUrl = `${window.location.origin}/event/${result.unique_id}`;
+                      
+                      // Generate QR code
+                      let qrCodeDataUrl = '';
+                      try {
+                        qrCodeDataUrl = await QRCode.toDataURL(shareUrl, {
+                          width: 200,
+                          margin: 2,
+                          color: {
+                            dark: '#00D4AA',
+                            light: '#1a1a1a'
+                          }
+                        });
+                      } catch (qrError) {
+                        console.error('QR Code generation failed:', qrError);
+                        // Continue without QR code
+                      }
+                      
+                      // Show success modal with QR code
+                      const successModal = document.createElement('div');
+                      successModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                      successModal.innerHTML = `
+                        <div class="bg-[#2a2a2a] rounded-[18px] p-6 w-full max-w-md mx-4 border border-[#00D4AA]">
+                          <div class="text-center">
+                            <h3 class="text-xl font-bold text-[#00D4AA] mb-4">Event Menu Created!</h3>
+                            <div class="mb-4">
+                              ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" class="mx-auto mb-4" />` : ''}
+                              <p class="text-sm text-[#b0b8c1] mb-2">${qrCodeDataUrl ? 'Scan QR code or share this link:' : 'Share this link:'}</p>
+                              <div class="bg-[#1a1a1a] rounded-[8px] p-3 mb-4">
+                                <input type="text" value="${shareUrl}" readonly class="w-full bg-transparent text-white text-sm" onclick="this.select()" />
+                              </div>
+                            </div>
+                            <button onclick="this.closest('.fixed').remove()" class="px-6 py-2 bg-[#00D4AA] hover:bg-[#00B894] text-white rounded-[8px] font-semibold transition-colors">
+                              Close
+                            </button>
+                          </div>
+                        </div>
+                      `;
+                      document.body.appendChild(successModal);
+                      
+                      setShowCreateEventMenu(false);
+                      setEventMenuName('');
+                      setEventMenuDescription('');
+                    } catch (error) {
+                      alert('Failed to create event menu. Please try again.');
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-[#00D4AA] hover:bg-[#00B894] text-white rounded-[8px] font-semibold transition-colors"
+                >
+                  Create
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       <style>{`
         .main-content {
