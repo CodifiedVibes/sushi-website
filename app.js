@@ -1433,15 +1433,15 @@ function App() {
           <div className="flex-1 overflow-y-auto">
             <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
               <h3 className="text-lg font-semibold mb-2 text-white">{selectedRunbookItem.activity}</h3>
-              {selectedRunbookItem.estimated_duration && (
-                <div className="text-sm text-[#00D4AA] mb-3">⏱️ {selectedRunbookItem.estimated_duration}</div>
-              )}
             </div>
             
             {/* Beginner Steps */}
             {selectedRunbookItem.beginner_steps && (
               <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
-                <h4 className="text-md font-semibold mb-3 text-[#00D4AA]">Beginner Steps</h4>
+                <h4 className="text-md font-semibold mb-3 text-[#00D4AA] flex items-center gap-2">
+                  <span className="text-lg">🌱</span>
+                  Basic Steps
+                </h4>
                 <div className="text-sm text-white" style={{whiteSpace: 'normal', lineHeight: '1.5'}}>
                   {selectedRunbookItem.beginner_steps}
                 </div>
@@ -1451,7 +1451,10 @@ function App() {
             {/* Advanced Steps */}
             {selectedRunbookItem.advanced_steps && (
               <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
-                <h4 className="text-md font-semibold mb-3 text-[#00D4AA]">Advanced Steps</h4>
+                <h4 className="text-md font-semibold mb-3 text-[#00D4AA] flex items-center gap-2">
+                  <span className="text-lg">⚡</span>
+                  Advanced Steps
+                </h4>
                 <div className="text-sm text-white" style={{whiteSpace: 'normal', lineHeight: '1.5'}}>
                   {selectedRunbookItem.advanced_steps}
                 </div>
