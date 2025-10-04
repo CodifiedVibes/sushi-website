@@ -113,6 +113,36 @@ function getMenuItemImage(item) {
 }
 
 // 1. Helper to get all needed ingredients for cart items, grouped by category, summed quantity
+function StarRating({ difficulty, showText = false }) {
+  const stars = [];
+  for (let i = 1; i <= 3; i++) {
+    stars.push(
+      <span
+        key={i}
+        className={`text-lg ${
+          i <= difficulty
+            ? 'text-[#00D4AA]' // Filled star with green color
+            : 'text-[#00D4AA] opacity-30' // Outline star with green color but transparent
+        }`}
+        style={{
+          textShadow: i > difficulty ? '0 0 2px #00D4AA' : 'none' // Green outline for unfilled stars
+        }}
+      >
+        ★
+      </span>
+    );
+  }
+  
+  const difficultyText = difficulty === 1 ? 'Easy' : difficulty === 2 ? 'Intermediate' : 'Advanced';
+  
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex gap-1">{stars}</div>
+      {showText && <span className="text-sm text-[#b0b8c1]">{difficultyText}</span>}
+    </div>
+  );
+}
+
 function getCartIngredientsSummary(cart, ingredientsMaster) {
   // Build a map of ingredient name -> { ...ingredient, totalQty }
   const ingredientMap = {};
@@ -339,7 +369,7 @@ function App() {
       id: 1,
       name: 'Nikiri Sauce',
       category: 'Sauce',
-      description: 'Traditional Japanese sauce for sushi and sashimi. A complex, umami-rich sauce that enhances the natural flavors of fish.',
+      description: 'Nikiri sauce is a traditional Japanese glaze for nigiri and sashimi, sweeter and thicker than regular soy sauce to elevate raw fish.',
       ingredients: [
         { name: 'Normal soy', amount: '3 oz' },
         { name: 'Sweet soy', amount: '2 oz' },
@@ -348,16 +378,21 @@ function App() {
         { name: 'Konbu', amount: '1 piece' },
         { name: 'Bonito flakes', amount: '1 bag' }
       ],
-      instructions: 'Combine all ingredients and simmer until reduced by half. Strain and store.',
+      instructions: [
+        'In a saucepan, mix mirin and sake; ignite to burn off alcohol, then simmer over medium heat for a few minutes.',
+        'Add soy sauce, sweet soy, konbu, and bonito flakes; reduce heat to low.',
+        'Simmer 15-20 min until ~6 oz remains (from 9 oz total liquid), removing konbu and bonito after about 7 min.',
+        'Check Consistency: The sauce should be thick enough to lightly coat the back of a spoon. To test, chill a spoonful on ice for 20 seconds, then place a large drop on a plate. Tilt the plate slightly; the drop should slide slowly, not run quickly.'
+      ],
       storage: 'Can store up to 1 month',
       prepTime: '30 minutes',
-      difficulty: 'Intermediate'
+      difficulty: 2
     },
     {
       id: 2,
       name: 'Yellowtail Yuzu',
       category: 'Preparation',
-      description: 'Delicate preparation featuring thinly sliced sashimi-grade yellowtail with fresh jalapeño, garlic, and yuzu soy sauce',
+      description: 'Thinly sliced sushi-grade yellowtail (hamachi) is topped with jalapeño slices, garlic, and cilantro, then drizzled with tangy yuzu-soy ponzu.',
       ingredients: [
         { name: 'Yellowtail', amount: '8 oz' },
         { name: 'Jalapeño', amount: '1 pepper' },
@@ -366,10 +401,17 @@ function App() {
         { name: 'Soy sauce', amount: '1 tbsp' },
         { name: 'Cilantro', amount: '2 tbsp' }
       ],
-      instructions: 'Thinly slice yellowtail, arrange on plate, top with jalapeño, press against garlic, finish with yuzu soy sauce, garnish with cilantro',
+      instructions: [
+        'Slice yellowtail into 6 thin pieces; lightly rub with garlic.',
+        'Mix yuzu juice and soy sauce for ponzu.',
+        'Arrange fish in a shallow bowl in circular placement over a pool of ponzu.',
+        'Top each slice with thinly sliced jalapeño.',
+        'Place cilantro in middle for plating.',
+        'Serve immediately.'
+      ],
       storage: 'Serve immediately',
       prepTime: '15 minutes',
-      difficulty: 'Easy'
+      difficulty: 1
     }
   ]);
   const [recipeFilter, setRecipeFilter] = useState('');
@@ -1142,7 +1184,7 @@ function App() {
                       <div className="flex gap-3 text-sm text-[#b0b8c1] flex-wrap">
                         <span className="bg-[#3a3a3a] px-2 py-1 rounded">{recipe.category}</span>
                         <span>⏱️ {recipe.prepTime}</span>
-                        <span>📊 {recipe.difficulty}</span>
+                        <StarRating difficulty={recipe.difficulty} showText={true} />
                       </div>
                     </div>
                     <div className="text-[#b0b8c1] text-sm ml-4 flex-shrink-0">
@@ -1474,7 +1516,7 @@ function App() {
               <div className="flex gap-3 text-sm text-[#b0b8c1] mb-3">
                 <span className="bg-[#3a3a3a] px-2 py-1 rounded">{selectedRecipe.category}</span>
                 <span>⏱️ {selectedRecipe.prepTime}</span>
-                <span>📊 {selectedRecipe.difficulty}</span>
+                <StarRating difficulty={selectedRecipe.difficulty} />
               </div>
               <p className="text-sm text-white">{selectedRecipe.description}</p>
             </div>
@@ -1494,7 +1536,15 @@ function App() {
             <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
               <h4 className="text-md font-semibold mb-3 text-[#00D4AA]">Instructions</h4>
               <div className="text-sm text-white" style={{whiteSpace: 'normal', lineHeight: '1.5'}}>
-                {selectedRecipe.instructions}
+                {Array.isArray(selectedRecipe.instructions) ? (
+                  <ol className="list-decimal list-outside space-y-1 pl-6">
+                    {selectedRecipe.instructions.map((instruction, index) => (
+                      <li key={index} className="pl-2">{instruction}</li>
+                    ))}
+                  </ol>
+                ) : (
+                  selectedRecipe.instructions
+                )}
               </div>
             </div>
             
