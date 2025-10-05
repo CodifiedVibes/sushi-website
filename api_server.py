@@ -21,7 +21,7 @@ CORS(app)  # Enable CORS for frontend
 
 # Rate limiting setup
 limiter = Limiter(
-    app,
+    app=app,
     key_func=get_remote_address,
     default_limits=["200 per day", "50 per hour"]
 )
