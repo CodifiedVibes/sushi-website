@@ -1213,16 +1213,25 @@ function App() {
                           }
                         });
                         
-                        return sortedCart.map((item, idx) => (
-                          <tr key={idx} className="border-b border-[#1a1a1a]">
-                            <td className="px-4 py-2 font-semibold text-white">{item.name}</td>
-                            <td className="px-4 py-2 text-[#b0b8c1]">{item.category}</td>
-                            <td className="px-4 py-2 text-white">{item.quantity}</td>
-                            <td className="px-4 py-2">
-                              <button className="text-xs text-[#b0b8c1] hover:text-red-400" onClick={() => removeFromCart(item)}>Remove</button>
-                            </td>
-                          </tr>
-                        ));
+                        return sortedCart.map((item, idx) => {
+                          const categoryColors = {
+                            'Appetizer': '#FF69B4',
+                            'Nigiri': '#9945FF',
+                            'Maki Rolls': '#3B82F6',
+                            'Speciality Rolls': '#00D4AA'
+                          };
+                          const categoryColor = categoryColors[item.category] || '#b0b8c1';
+                          return (
+                            <tr key={idx} className="border-b border-[#1a1a1a]">
+                              <td className="px-4 py-2 font-semibold text-white">{item.name}</td>
+                              <td className="px-4 py-2 font-semibold" style={{ color: categoryColor }}>{item.category}</td>
+                              <td className="px-4 py-2 text-white">{item.quantity}</td>
+                              <td className="px-4 py-2">
+                                <button className="text-xs text-[#b0b8c1] hover:text-red-400" onClick={() => removeFromCart(item)}>Remove</button>
+                              </td>
+                            </tr>
+                          );
+                        });
                       })()}
                     </tbody>
                   </table>
@@ -1433,11 +1442,20 @@ function App() {
                 </div>
                 <div className="space-y-2">
                   <h4 className="text-md font-semibold text-[#00D4AA]">Menu Items:</h4>
-                  {getCartSummary(selectedEventMenu.menu_data || []).map((item, idx) => (
-                    <div key={idx} className="bg-[#1a1a1a] rounded-[8px] px-3 py-2 text-white text-sm">
-                      {item.count}x {item.name} ({item.category})
-                    </div>
-                  ))}
+                  {getCartSummary(selectedEventMenu.menu_data || []).map((item, idx) => {
+                    const categoryColors = {
+                      'Appetizer': '#FF69B4',
+                      'Nigiri': '#9945FF',
+                      'Maki Rolls': '#3B82F6',
+                      'Speciality Rolls': '#00D4AA'
+                    };
+                    const categoryColor = categoryColors[item.category] || '#b0b8c1';
+                    return (
+                      <div key={idx} className="bg-[#1a1a1a] rounded-[8px] px-3 py-2 text-white text-sm">
+                        {item.count}x {item.name} (<span style={{ color: categoryColor, fontWeight: 'bold' }}>{item.category}</span>)
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1727,12 +1745,21 @@ function App() {
         {/* Top: Menu item summary */}
         <div className="mb-4">
           {getCartSummary(cart).length === 0 && <div className="text-[#b0b8c1] italic">No items selected.</div>}
-          {getCartSummary(cart).map((item, idx) => (
-            <div key={idx} className="bg-[#1a1a1a] rounded-[12px] px-3 py-2 text-white text-sm flex items-center justify-between mb-2">
-              <span>{item.count}x {item.name}</span>
-              <span className="text-xs text-[#b0b8c1]">{item.category}</span>
-            </div>
-          ))}
+          {getCartSummary(cart).map((item, idx) => {
+            const categoryColors = {
+              'Appetizer': '#FF69B4',
+              'Nigiri': '#9945FF',
+              'Maki Rolls': '#3B82F6',
+              'Speciality Rolls': '#00D4AA'
+            };
+            const categoryColor = categoryColors[item.category] || '#b0b8c1';
+            return (
+              <div key={idx} className="bg-[#1a1a1a] rounded-[12px] px-3 py-2 text-white text-sm flex items-center justify-between mb-2">
+                <span>{item.count}x {item.name}</span>
+                <span className="text-xs font-semibold" style={{ color: categoryColor }}>{item.category}</span>
+              </div>
+            );
+          })}
         </div>
         {/* Categorized ingredient list */}
         {(() => {
