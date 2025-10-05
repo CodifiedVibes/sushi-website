@@ -1475,23 +1475,24 @@ function App() {
             {/* Recipe Cards */}
             <div className="grid gap-4">
               {filteredRecipes.map(recipe => (
-                <div 
-                  key={recipe.id} 
-                  className="bg-[#2a2a2a] rounded-[12px] p-4 shadow hover:bg-[#3a3a3a] transition cursor-pointer"
+                <div
+                  key={recipe.id}
+                  className="bg-[#2a2a2a] rounded-[12px] p-4 shadow hover:bg-[#3a3a3a] transition cursor-pointer flex flex-col h-full"
                   onClick={() => setSelectedRecipe(recipe)}
                 >
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-[#00D4AA] mb-1">{recipe.name}</h3>
-                      <div className="flex gap-3 text-sm text-[#b0b8c1] flex-wrap">
-                        <span className="bg-[#3a3a3a] px-2 py-1 rounded">{recipe.category}</span>
-                        <span>⏱️ {recipe.prepTime}</span>
-                        <StarRating difficulty={recipe.difficulty} showText={true} />
-                      </div>
+                  {/* Top row with name and category */}
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-semibold text-[#00D4AA] flex-1 min-w-0">{recipe.name}</h3>
+                    <span className="bg-[#3a3a3a] px-2 py-1 rounded text-sm text-[#b0b8c1] ml-2 flex-shrink-0">{recipe.category}</span>
+                  </div>
+                  
+                  {/* Middle section with prep time, difficulty, and click to view details */}
+                  <div className="flex justify-between items-center text-sm text-[#b0b8c1] mb-auto">
+                    <div className="flex gap-3">
+                      <span>⏱️ {recipe.prepTime}</span>
+                      <StarRating difficulty={recipe.difficulty} showText={true} />
                     </div>
-                    <div className="text-[#b0b8c1] text-sm ml-4 flex-shrink-0">
-                      Click to view details →
-                    </div>
+                    <span>Click to view details →</span>
                   </div>
                 </div>
               ))}
@@ -1768,7 +1769,7 @@ function App() {
         </div>
         {selectedRunbookItem && (
           <div className="flex-1 overflow-y-auto">
-            <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
+            <div className="mb-4">
               <h3 className="text-lg font-semibold mb-2 text-white">{selectedRunbookItem.activity}</h3>
             </div>
             
@@ -1826,9 +1827,11 @@ function App() {
         {selectedRecipe && (
           <div className="flex-1 overflow-y-auto">
             <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
-              <h3 className="text-lg font-semibold mb-2 text-white">{selectedRecipe.name}</h3>
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-lg font-semibold text-white flex-1">{selectedRecipe.name}</h3>
+                <span className="bg-[#3a3a3a] px-2 py-1 rounded text-sm text-[#b0b8c1] ml-2">{selectedRecipe.category}</span>
+              </div>
               <div className="flex gap-3 text-sm text-[#b0b8c1] mb-3">
-                <span className="bg-[#3a3a3a] px-2 py-1 rounded">{selectedRecipe.category}</span>
                 <span>⏱️ {selectedRecipe.prepTime}</span>
                 <StarRating difficulty={selectedRecipe.difficulty} />
               </div>
