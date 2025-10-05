@@ -13,6 +13,8 @@ import json
 import uuid
 from datetime import datetime, timedelta
 import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend
@@ -25,9 +27,17 @@ limiter = Limiter(
 )
 
 def get_db_connection():
-    """Create database connection"""
-    conn = sqlite3.connect('sushi.db')
-    conn.row_factory = sqlite3.Row  # This enables column access by name
+    """Create database connection - supports both SQLite (local) and PostgreSQL (Railway)"""
+    database_url = os.getenv('DATABASE_URL')
+    
+    if database_url:
+        # PostgreSQL connection for Railway
+        conn = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
+    else:
+        # SQLite connection for local development
+        conn = sqlite3.connect('sushi.db')
+        conn.row_factory = sqlite3.Row
+    
     return conn
 
 @app.route('/api/menu', methods=['GET'])
@@ -505,8 +515,9 @@ def health_check():
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
 
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5001))
     print("Starting Sushi Restaurant API Server...")
-    print("API will be available at: http://localhost:5001")
+    print(f"API will be available at: http://localhost:{port}")
     print("Available endpoints:")
     print("  GET /api/menu - Get all menu items")
     print("  GET /api/ingredients - Get all ingredients")
@@ -523,4 +534,4 @@ if __name__ == '__main__':
     print("  PUT /api/event-menus/<id> - Update event menu")
     print("  DELETE /api/event-menus/<id> - Delete event menu")
     print("  GET /api/event-menus - List all event menus")
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    app.run(debug=False, host='0.0.0.0', port=port)
