@@ -1251,8 +1251,9 @@ function App() {
                   <table className="min-w-full text-sm bg-[#2a2a2a] rounded-[12px] shadow">
                     <thead>
                       <tr>
-                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Item</th>
                         <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Category</th>
+                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Item</th>
+                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Description</th>
                         <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Quantity</th>
                         <th className="px-4 py-2"></th>
                       </tr>
@@ -1292,8 +1293,9 @@ function App() {
                           const categoryColor = categoryColors[item.category] || '#b0b8c1';
                           return (
                             <tr key={idx} className="border-b border-[#1a1a1a]">
-                              <td className="px-4 py-2 font-semibold text-white">{item.name}</td>
                               <td className="px-4 py-2 font-semibold" style={{ color: categoryColor }}>{item.category}</td>
+                              <td className="px-4 py-2 font-semibold text-white">{item.name}</td>
+                              <td className="px-4 py-2 text-[#b0b8c1]">{item.description || 'No description available'}</td>
                               <td className="px-4 py-2 text-white">{item.quantity}</td>
                               <td className="px-4 py-2">
                                 <button className="text-xs text-[#b0b8c1] hover:text-red-400" onClick={() => removeFromCart(item)}>Remove</button>
