@@ -4,7 +4,7 @@ Flask API server for Sushi Restaurant
 Serves data from SQLite database
 """
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -16,7 +16,7 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)  # Enable CORS for frontend
 
 # Rate limiting setup
@@ -39,6 +39,16 @@ def get_db_connection():
         conn.row_factory = sqlite3.Row
     
     return conn
+
+@app.route('/')
+def serve_index():
+    """Serve the main HTML file"""
+    return send_from_directory('.', 'index.html')
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    """Serve static files (JS, CSS, etc.)"""
+    return send_from_directory('.', filename)
 
 @app.route('/api/menu', methods=['GET'])
 def get_menu():
