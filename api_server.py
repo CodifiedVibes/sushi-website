@@ -40,6 +40,62 @@ def get_db_connection():
     
     return conn
 
+def check_and_initialize_database():
+    """Check if database has data and initialize if empty"""
+    database_url = os.getenv('DATABASE_URL')
+    
+    if not database_url:
+        # Skip initialization for local SQLite
+        return
+    
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # Check if menu_items table exists and has data
+            cursor.execute("""
+                SELECT COUNT(*) as count 
+                FROM information_schema.tables 
+                WHERE table_name = 'menu_items' AND table_schema = 'public'
+            """)
+            table_exists = cursor.fetchone()['count'] > 0
+            
+            if table_exists:
+                cursor.execute("SELECT COUNT(*) as count FROM menu_items")
+                menu_count = cursor.fetchone()['count']
+                if menu_count > 0:
+                    print("✅ Database already initialized with data")
+                    conn.close()
+                    return
+            
+            print("🔄 Database is empty, initializing...")
+            
+            # Read and execute schema
+            with open('postgresql_schema.sql', 'r') as f:
+                schema_sql = f.read()
+                commands = [cmd.strip() for cmd in schema_sql.split(';') if cmd.strip()]
+                for command in commands:
+                    if command:
+                        cursor.execute(command)
+                conn.commit()
+                print("✅ Schema created")
+            
+            # Read and execute data
+            with open('postgresql_data.sql', 'r') as f:
+                data_sql = f.read()
+                commands = [cmd.strip() for cmd in data_sql.split(';') if cmd.strip()]
+                for command in commands:
+                    if command:
+                        cursor.execute(command)
+                conn.commit()
+                print("✅ Data imported")
+            
+        conn.close()
+        print("✅ Database initialization complete!")
+        
+    except Exception as e:
+        print(f"❌ Database initialization failed: {e}")
+        # Don't crash the app, just log the error
+
 @app.route('/')
 def serve_index():
     """Serve the main HTML file"""
@@ -528,6 +584,10 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
     print("Starting Sushi Restaurant API Server...")
     print(f"API will be available at: http://localhost:{port}")
+    
+    # Initialize database if needed (for Railway deployment)
+    check_and_initialize_database()
+    
     print("Available endpoints:")
     print("  GET /api/menu - Get all menu items")
     print("  GET /api/ingredients - Get all ingredients")
