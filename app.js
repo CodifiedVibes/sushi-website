@@ -1,5 +1,10 @@
 const { useState, useEffect } = React;
 
+// API Configuration - automatically detects environment
+const API_BASE_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:5001/api' 
+  : `https://${window.location.hostname}/api`;
+
 const CATEGORY_ORDER = [
   'Appetizer',
   'Nigiri',
@@ -277,9 +282,9 @@ function App() {
   useEffect(() => {
     // Fetch data from API endpoints
     Promise.all([
-      fetch('http://localhost:5001/api/menu'),
-      fetch('http://localhost:5001/api/ingredients'),
-      fetch('http://localhost:5001/api/runbook')
+      fetch(`${API_BASE_URL}/menu`),
+      fetch(`${API_BASE_URL}/ingredients`),
+      fetch(`${API_BASE_URL}/runbook`)
     ])
       .then(responses => Promise.all(responses.map(res => res.json())))
       .then(([menuData, ingredientsData, runbookData]) => {
@@ -439,7 +444,7 @@ function App() {
     try {
       console.log('Creating event menu with data:', { name, description, menuData });
       
-      const response = await fetch('http://localhost:5001/api/event-menus', {
+      const response = await fetch(`${API_BASE_URL}/event-menus`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -471,7 +476,7 @@ function App() {
 
   const getEventMenu = async (uniqueId) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/event-menus/${uniqueId}`);
+      const response = await fetch(`${API_BASE_URL}/event-menus/${uniqueId}`);
       
       if (!response.ok) {
         throw new Error('Event menu not found');
@@ -487,7 +492,7 @@ function App() {
 
   const updateEventMenu = async (uniqueId, data) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/event-menus/${uniqueId}`, {
+      const response = await fetch(`${API_BASE_URL}/event-menus/${uniqueId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -509,7 +514,7 @@ function App() {
 
   const deleteEventMenu = async (uniqueId) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/event-menus/${uniqueId}`, {
+      const response = await fetch(`${API_BASE_URL}/event-menus/${uniqueId}`, {
         method: 'DELETE'
       });
       
@@ -527,7 +532,7 @@ function App() {
 
   const listEventMenus = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/event-menus');
+      const response = await fetch(`${API_BASE_URL}/event-menus`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch event menus');
