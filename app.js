@@ -299,14 +299,24 @@ function App() {
   const [menuFilter, setMenuFilter] = useState('all'); // all, top-ranked, salmon, tuna, veggie
 
   useEffect(() => {
+    console.log('Starting data fetch...');
     // Fetch data from API endpoints
     Promise.all([
       fetch(`${API_BASE_URL}/menu`),
       fetch(`${API_BASE_URL}/ingredients`),
       fetch(`${API_BASE_URL}/runbook`)
     ])
-      .then(responses => Promise.all(responses.map(res => res.json())))
+      .then(responses => {
+        console.log('API responses received:', responses.map(r => r.status));
+        return Promise.all(responses.map(res => res.json()));
+      })
       .then(([menuData, ingredientsData, runbookData]) => {
+        console.log('Data parsed:', { 
+          menuLength: menuData?.length, 
+          ingredientsKeys: Object.keys(ingredientsData || {}), 
+          runbookLength: runbookData?.length 
+        });
+        
         // Convert menu array to object grouped by category
         const menuByCategory = {};
         if (menuData && Array.isArray(menuData)) {
@@ -322,12 +332,21 @@ function App() {
         setIngredients(ingredientsData || {});
         setRunbook(runbookData || []);
         setLoading(false);
+        console.log('Data loading complete');
       })
       .catch(err => {
         console.error('API Error:', err);
         setError('Failed to load menu data from API.');
         setLoading(false);
       });
+
+    // Fallback: force loading to false after 10 seconds
+    const fallbackTimer = setTimeout(() => {
+      console.log('Fallback: forcing loading to false');
+      setLoading(false);
+    }, 10000);
+
+    return () => clearTimeout(fallbackTimer);
   }, []);
 
   const toggleCategory = (cat) => {
@@ -775,6 +794,25 @@ function App() {
         <div className="text-center">
           <div className="text-[#00D4AA] text-xl mb-4">Loading CASSaROLL...</div>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D4AA] mx-auto"></div>
+          <div className="text-sm text-[#b0b8c1] mt-2">Debug: loading={loading.toString()}</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#1a1a1a] text-white">
+        <div className="text-center">
+          <div className="text-red-400 text-xl mb-4">Error Loading App</div>
+          <div className="text-[#b0b8c1]">{error}</div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-[#00D4AA] text-white rounded hover:bg-[#00B894]"
+          >
+            Reload
+          </button>
         </div>
       </div>
     );
