@@ -6,13 +6,23 @@ Serves data from SQLite database
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import sqlite3
 import json
 import uuid
 from datetime import datetime, timedelta
+import os
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend
+
+# Rate limiting setup
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
 
 def get_db_connection():
     """Create database connection"""
@@ -327,6 +337,7 @@ def get_recipes_by_category(category):
 
 # Event Menu API endpoints
 @app.route('/api/event-menus', methods=['POST'])
+@limiter.limit("10 per minute")  # Limit event creation to 10 per minute per IP
 def create_event_menu():
     """Create a new event menu"""
     conn = get_db_connection()
