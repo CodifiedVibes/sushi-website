@@ -1745,21 +1745,46 @@ function App() {
         {/* Top: Menu item summary */}
         <div className="mb-4">
           {getCartSummary(cart).length === 0 && <div className="text-[#b0b8c1] italic">No items selected.</div>}
-          {getCartSummary(cart).map((item, idx) => {
-            const categoryColors = {
-              'Appetizer': '#FF69B4',
-              'Nigiri': '#9945FF',
-              'Maki Rolls': '#3B82F6',
-              'Speciality Rolls': '#00D4AA'
-            };
-            const categoryColor = categoryColors[item.category] || '#b0b8c1';
-            return (
-              <div key={idx} className="bg-[#1a1a1a] rounded-[12px] px-3 py-2 text-white text-sm flex items-center justify-between mb-2">
-                <span>{item.count}x {item.name}</span>
-                <span className="text-xs font-semibold" style={{ color: categoryColor }}>{item.category}</span>
-              </div>
-            );
-          })}
+          {(() => {
+            // Sort cart items by category, then alphabetically within each category
+            const groupedByCategory = {};
+            getCartSummary(cart).forEach(item => {
+              if (!groupedByCategory[item.category]) {
+                groupedByCategory[item.category] = [];
+              }
+              groupedByCategory[item.category].push(item);
+            });
+            
+            // Sort each category group alphabetically by name
+            Object.keys(groupedByCategory).forEach(category => {
+              groupedByCategory[category].sort((a, b) => a.name.localeCompare(b.name));
+            });
+            
+            // Flatten back to single array, maintaining category order
+            const sortedCart = [];
+            const categoryOrder = ['Appetizer', 'Nigiri', 'Maki Rolls', 'Speciality Rolls'];
+            categoryOrder.forEach(category => {
+              if (groupedByCategory[category]) {
+                sortedCart.push(...groupedByCategory[category]);
+              }
+            });
+            
+            return sortedCart.map((item, idx) => {
+              const categoryColors = {
+                'Appetizer': '#FF69B4',
+                'Nigiri': '#9945FF',
+                'Maki Rolls': '#3B82F6',
+                'Speciality Rolls': '#00D4AA'
+              };
+              const categoryColor = categoryColors[item.category] || '#b0b8c1';
+              return (
+                <div key={idx} className="bg-[#1a1a1a] rounded-[12px] px-3 py-2 text-white text-sm flex items-center justify-between mb-2">
+                  <span>{item.count}x {item.name}</span>
+                  <span className="text-xs font-semibold" style={{ color: categoryColor }}>{item.category}</span>
+                </div>
+              );
+            });
+          })()}
         </div>
         {/* Categorized ingredient list */}
         {(() => {
