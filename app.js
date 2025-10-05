@@ -232,6 +232,12 @@ function App() {
   const loadEventMenuFromUrl = async (eventId) => {
     try {
       console.log('Loading event menu from URL:', eventId);
+      // Only load event if main data is already loaded
+      if (loading) {
+        console.log('Waiting for main data to load before loading event...');
+        return;
+      }
+      
       const eventMenu = await getEventMenu(eventId);
       setSelectedEventMenu(eventMenu);
       setCart(eventMenu.menu_data || []);
@@ -241,6 +247,9 @@ function App() {
     } catch (error) {
       console.error('Failed to load event menu from URL:', error);
       // Don't show alert for URL-based loading, just log the error
+      // Clear any invalid event state
+      setCurrentEventId(null);
+      setSelectedEventMenu(null);
     }
   };
   
@@ -251,6 +260,16 @@ function App() {
       loadEventMenuFromUrl(eventId);
     }
   }, []);
+
+  // Load event after main data is loaded
+  useEffect(() => {
+    if (!loading) {
+      const eventId = extractEventIdFromUrl();
+      if (eventId && eventId !== currentEventId && !selectedEventMenu) {
+        loadEventMenuFromUrl(eventId);
+      }
+    }
+  }, [loading]);
   
   // Listen for URL changes (back/forward buttons)
   useEffect(() => {
@@ -747,6 +766,18 @@ function App() {
     if (diffHrs < 0) return `Show Time has passed!`;
     if (diffHrs < 24) return `Less than 24 hours to Show Time!`;
     return `${Math.floor(diffHrs/24)} day(s), ${diffHrs%24} hour(s) to Show Time`;
+  }
+
+  // Show loading state while data is being fetched
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#1a1a1a] text-white">
+        <div className="text-center">
+          <div className="text-[#00D4AA] text-xl mb-4">Loading CASSaROLL...</div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D4AA] mx-auto"></div>
+        </div>
+      </div>
+    );
   }
 
   return (
