@@ -101,9 +101,18 @@ def serve_index():
     """Serve the main HTML file"""
     return send_from_directory('.', 'index.html')
 
+@app.route('/event/<path:event_id>')
+def serve_event_page(event_id):
+    """Serve the main HTML file for event pages (client-side routing)"""
+    return send_from_directory('.', 'index.html')
+
 @app.route('/<path:filename>')
 def serve_static(filename):
     """Serve static files (JS, CSS, etc.)"""
+    # Skip API routes
+    if filename.startswith('api/'):
+        return "Not Found", 404
+    
     return send_from_directory('.', filename)
 
 @app.route('/api/menu', methods=['GET'])
