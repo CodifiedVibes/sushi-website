@@ -528,13 +528,22 @@ def create_event_menu():
         if database_url:
             has_readonly_column = cursor.fetchone() is not None
         
-        # Check if host_name column exists
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'event_menus' AND column_name = 'host_name'
-        """)
-        has_hostname_column = cursor.fetchone() is not None
+        # Check if host_name column exists (Postgres vs SQLite)
+        if database_url:
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'event_menus' AND column_name = 'host_name'
+            """)
+            has_hostname_column = cursor.fetchone() is not None
+        else:
+            cursor.execute("""
+                PRAGMA table_info(event_menus)
+            """)
+            columns = cursor.fetchall()
+            # SQLite PRAGMA table_info returns tuples/rows; index 1 is column name for default row factory
+            has_hostname_column = any(col[1] == 'host_name' for col in columns)
+            cursor = conn.cursor()  # Reset cursor for the insert
         
         if has_readonly_column and has_hostname_column:
             # Use the new schema with both columns
