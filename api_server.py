@@ -615,6 +615,15 @@ def delete_event_menu(unique_id):
     finally:
         conn.close()
 
+@app.route('/api/migrate-readonly', methods=['POST'])
+def migrate_readonly_endpoint():
+    """Manual endpoint to trigger read_only column migration"""
+    try:
+        migrate_readonly_column()
+        return jsonify({'message': 'Migration completed successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/event-menus', methods=['GET'])
 def list_event_menus():
     """List all non-expired event menus (for admin/debug purposes)"""
