@@ -1764,7 +1764,7 @@ function App() {
               const categoryColor = categoryColors[item.category] || '#b0b8c1';
               return (
                 <div key={idx} className="bg-[#1a1a1a] rounded-[12px] px-3 py-2 text-white text-sm flex items-center justify-between mb-2">
-                  <span>{item.count}x {item.name}</span>
+                  <span>{item.count} {item.name}</span>
                   <span className="text-xs font-semibold" style={{ color: categoryColor }}>{item.category}</span>
                 </div>
               );
@@ -1978,7 +1978,7 @@ function App() {
                 <div className="space-y-1 max-h-32 overflow-y-auto">
                   {getCartSummary(cart).map((item, idx) => (
                     <div key={idx} className="text-xs text-white">
-                      {item.count}x {item.name}
+                      {item.count} {item.name}
                     </div>
                   ))}
                 </div>
