@@ -729,6 +729,25 @@ def add_readonly_column():
             return jsonify({'message': 'read_only column already exists'}), 200
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/add-hostname-column', methods=['POST'])
+def add_hostname_column():
+    """Simple endpoint to add host_name column"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Try to add the column
+        cursor.execute("ALTER TABLE event_menus ADD COLUMN host_name VARCHAR(100)")
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'message': 'host_name column added successfully'}), 200
+        
+    except Exception as e:
+        if 'already exists' in str(e) or 'duplicate column' in str(e):
+            return jsonify({'message': 'host_name column already exists'}), 200
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/migrate-readonly', methods=['POST'])
 def migrate_readonly_endpoint():
     """Manual endpoint to trigger read_only column migration"""
