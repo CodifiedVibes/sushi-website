@@ -531,26 +531,28 @@ def create_event_menu():
         if has_readonly_column:
             # Use the new schema with read_only column
             cursor.execute("""
-                INSERT INTO event_menus (unique_id, name, description, menu_data, read_only, expires_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO event_menus (unique_id, name, description, menu_data, read_only, host_name, expires_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
                 unique_id,
                 data['name'],
                 data.get('description', ''),
                 json.dumps(data['menu_data']),
                 data.get('read_only', False),
+                data.get('host_name', ''),
                 expires_at
             ))
         else:
             # Use the old schema without read_only column
             cursor.execute("""
-                INSERT INTO event_menus (unique_id, name, description, menu_data, expires_at)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO event_menus (unique_id, name, description, menu_data, host_name, expires_at)
+                VALUES (?, ?, ?, ?, ?, ?)
             """, (
                 unique_id,
                 data['name'],
                 data.get('description', ''),
                 json.dumps(data['menu_data']),
+                data.get('host_name', ''),
                 expires_at
             ))
         
@@ -561,6 +563,7 @@ def create_event_menu():
             'unique_id': unique_id,
             'name': data['name'],
             'description': data.get('description', ''),
+            'host_name': data.get('host_name', ''),
             'expires_at': expires_at.isoformat()
         }
         

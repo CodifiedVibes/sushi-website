@@ -492,11 +492,12 @@ function App() {
   const [showCreateEventMenu, setShowCreateEventMenu] = useState(false);
   const [eventMenuName, setEventMenuName] = useState('');
   const [eventMenuDescription, setEventMenuDescription] = useState('');
+  const [eventMenuHostName, setEventMenuHostName] = useState('');
 
   // Event Menu API functions
-  const createEventMenu = async (name, description, menuData) => {
+  const createEventMenu = async (name, description, menuData, hostName = '') => {
     try {
-      console.log('Creating event menu with data:', { name, description, menuData });
+      console.log('Creating event menu with data:', { name, description, menuData, hostName });
       
       const response = await fetch(`${API_BASE_URL}/event-menus`, {
         method: 'POST',
@@ -506,7 +507,8 @@ function App() {
         body: JSON.stringify({
           name,
           description,
-          menu_data: menuData
+          menu_data: menuData,
+          host_name: hostName
         })
       });
       
@@ -1929,6 +1931,7 @@ function App() {
                   setShowCreateEventMenu(false);
                   setEventMenuName('');
                   setEventMenuDescription('');
+                  setEventMenuHostName('');
                 }}
               >
                 ×
@@ -1958,6 +1961,17 @@ function App() {
                 />
               </div>
               
+              <div>
+                <label className="block text-sm font-semibold text-white mb-2">Host Name (Optional)</label>
+                <input
+                  type="text"
+                  value={eventMenuHostName}
+                  onChange={(e) => setEventMenuHostName(e.target.value)}
+                  placeholder="e.g., John's Sushi Night"
+                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white placeholder-[#b0b8c1] focus:border-[#00D4AA] focus:outline-none"
+                />
+              </div>
+              
               
               <div className="bg-[#1a1a1a] rounded-[8px] p-3">
                 <div className="text-sm text-[#b0b8c1] mb-2">Selected Items ({cart.length})</div>
@@ -1976,6 +1990,7 @@ function App() {
                     setShowCreateEventMenu(false);
                     setEventMenuName('');
                     setEventMenuDescription('');
+                    setEventMenuHostName('');
                   }}
                   className="flex-1 px-4 py-2 bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white rounded-[8px] font-semibold transition-colors"
                 >
@@ -2010,7 +2025,8 @@ function App() {
                       const result = await createEventMenu(
                         eventMenuName.trim(),
                         eventMenuDescription.trim(),
-                        cart
+                        cart,
+                        eventMenuHostName.trim()
                       );
                       
                       const shareUrl = `${window.location.origin}/event/${result.unique_id}`;
