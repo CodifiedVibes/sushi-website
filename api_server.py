@@ -70,7 +70,7 @@ def migrate_readonly_column():
             """)
             
             conn.commit()
-            print("✅ Successfully added read_only column")
+            print("✅ Successfully added read_only column to event_menus table")
             
         conn.close()
         
