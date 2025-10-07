@@ -506,6 +506,7 @@ def create_event_menu():
         expires_at = datetime.now() + timedelta(days=30)
         
         # Check if read_only column exists
+        cursor = conn.cursor()
         cursor.execute("""
             SELECT column_name 
             FROM information_schema.columns 
