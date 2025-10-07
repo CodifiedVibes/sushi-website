@@ -45,7 +45,8 @@ def migrate_readonly_column():
     database_url = os.getenv('DATABASE_URL')
     
     if not database_url:
-        return
+        print("❌ No DATABASE_URL found")
+        return False
     
     try:
         conn = get_db_connection()
@@ -60,7 +61,7 @@ def migrate_readonly_column():
             if cursor.fetchone():
                 print("✅ read_only column already exists")
                 conn.close()
-                return
+                return True
             
             # Add read_only column
             print("🔄 Adding read_only column to event_menus table...")
@@ -72,10 +73,26 @@ def migrate_readonly_column():
             conn.commit()
             print("✅ Successfully added read_only column to event_menus table")
             
+            # Verify the column was added
+            cursor.execute("""
+                SELECT column_name, data_type, column_default
+                FROM information_schema.columns 
+                WHERE table_name = 'event_menus' AND column_name = 'read_only'
+            """)
+            
+            result = cursor.fetchone()
+            if result:
+                print(f"✅ Column verified: {result['column_name']} ({result['data_type']}) with default {result['column_default']}")
+            else:
+                print("❌ Column verification failed")
+                return False
+            
         conn.close()
+        return True
         
     except Exception as e:
         print(f"❌ Migration failed: {e}")
+        return False
 
 def check_and_initialize_database():
     """Check if database has data and initialize if empty"""
@@ -619,8 +636,11 @@ def delete_event_menu(unique_id):
 def migrate_readonly_endpoint():
     """Manual endpoint to trigger read_only column migration"""
     try:
-        migrate_readonly_column()
-        return jsonify({'message': 'Migration completed successfully'}), 200
+        success = migrate_readonly_column()
+        if success:
+            return jsonify({'message': 'Migration completed successfully'}), 200
+        else:
+            return jsonify({'error': 'Migration failed'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
