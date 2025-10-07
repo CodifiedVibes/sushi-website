@@ -505,28 +505,54 @@ def create_event_menu():
         # Set expiration to 30 days from now
         expires_at = datetime.now() + timedelta(days=30)
         
-        cursor = conn.execute("""
-            INSERT INTO event_menus (unique_id, name, description, menu_data, read_only, expires_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (
-            unique_id,
-            data['name'],
-            data.get('description', ''),
-            json.dumps(data['menu_data']),
-            data.get('read_only', False),
-            expires_at
-        ))
+        # Check if read_only column exists
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'event_menus' AND column_name = 'read_only'
+        """)
+        has_readonly_column = cursor.fetchone() is not None
+        
+        if has_readonly_column:
+            # Use the new schema with read_only column
+            cursor.execute("""
+                INSERT INTO event_menus (unique_id, name, description, menu_data, read_only, expires_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                unique_id,
+                data['name'],
+                data.get('description', ''),
+                json.dumps(data['menu_data']),
+                data.get('read_only', False),
+                expires_at
+            ))
+        else:
+            # Use the old schema without read_only column
+            cursor.execute("""
+                INSERT INTO event_menus (unique_id, name, description, menu_data, expires_at)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                unique_id,
+                data['name'],
+                data.get('description', ''),
+                json.dumps(data['menu_data']),
+                expires_at
+            ))
         
         conn.commit()
         
-        return jsonify({
+        response_data = {
             'id': cursor.lastrowid,
             'unique_id': unique_id,
             'name': data['name'],
             'description': data.get('description', ''),
-            'read_only': data.get('read_only', False),
             'expires_at': expires_at.isoformat()
-        }), 201
+        }
+        
+        if has_readonly_column:
+            response_data['read_only'] = data.get('read_only', False)
+        
+        return jsonify(response_data), 201
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
