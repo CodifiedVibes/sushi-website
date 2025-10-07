@@ -869,7 +869,7 @@ function App() {
         <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><rect y="4" width="24" height="2" rx="1" fill="#00D4AA"/><rect y="11" width="24" height="2" rx="1" fill="#00D4AA"/><rect y="18" width="24" height="2" rx="1" fill="#00D4AA"/></svg>
       </button>
       <main className="flex-1 flex flex-col sm:ml-56 ml-0 transition-all duration-300" style={mainContentStyle}>
-        <div className="max-w-7xl w-full py-10 px-4 main-content">
+        <div className="max-w-6xl w-full py-10 px-4 main-content">
           {/* Always show menu page unless on shopping_items */}
           {activeNav === 'menu' && (
             <section id="menu">
@@ -1012,7 +1012,7 @@ function App() {
                     }
                   }
                   return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mt-6">
                       {colMajorItems.map((item, idx) => {
                         const cartItem = getCartItem(item);
                         const categoryColors = {
@@ -1025,8 +1025,8 @@ function App() {
                         return (
                           <div
                             key={idx}
-                            className="bg-[#2a2a2a] rounded-[12px] p-0 card-hover shadow-md flex flex-row items-stretch cursor-pointer transition hover:shadow-lg hover:bg-[#3a3a3a] min-h-[110px] relative border-2"
-                            style={{borderRadius: 12, minHeight: 110, borderColor: color}}
+                            className="bg-[#2a2a2a] rounded-[12px] p-0 card-hover shadow-md flex flex-row items-stretch cursor-pointer transition hover:shadow-lg hover:bg-[#3a3a3a] min-h-[140px] relative border-2"
+                            style={{borderRadius: 12, minHeight: 140, borderColor: color}}
                           >
                             {/* Icon section (30%) */}
                             <div className="flex items-center justify-center" style={{width: '30%', minWidth: 0}}>
@@ -1038,7 +1038,7 @@ function App() {
                                     src={imgPath}
                                     alt={item.name}
                                     className="rounded-[12px] shadow-lg object-cover border-2 border-[#00D4AA]"
-                                    style={{width: '80px', height: '80px', background: '#fff', objectFit: 'cover'}}
+                                    style={{width: '100px', height: '100px', background: '#fff', objectFit: 'cover'}}
                                     onError={(e) => {
                                       // Hide the broken image completely
                                       e.target.style.display = 'none';
@@ -1120,14 +1120,14 @@ function App() {
                           );
                         })()}
                         <div className={`overflow-hidden transition-all duration-300 ${openCategories[cat] ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                             {menu[cat].map((item, idx) => {
                               const cartItem = getCartItem(item);
                               return (
                                 <div
                                   key={idx}
-                                  className="bg-[#2a2a2a] rounded-[12px] p-0 card-hover shadow-md flex flex-row items-stretch cursor-pointer transition hover:shadow-lg hover:bg-[#3a3a3a] min-h-[110px]"
-                                  style={{borderRadius: 12, minHeight: 110}}
+                                  className="bg-[#2a2a2a] rounded-[12px] p-0 card-hover shadow-md flex flex-row items-stretch cursor-pointer transition hover:shadow-lg hover:bg-[#3a3a3a] min-h-[140px]"
+                                  style={{borderRadius: 12, minHeight: 140}}
                                 >
                                   {/* Icon section (30%) */}
                                   <div className="flex items-center justify-center" style={{width: '30%', minWidth: 0}}>
@@ -1139,7 +1139,7 @@ function App() {
                                           src={imgPath}
                                           alt={item.name}
                                           className="rounded-[12px] shadow-lg object-cover border-2 border-[#00D4AA]"
-                                          style={{width: '80px', height: '80px', background: '#fff', objectFit: 'cover'}}
+                                          style={{width: '100px', height: '100px', background: '#fff', objectFit: 'cover'}}
                                           onError={(e) => {
                                             // Hide the broken image completely
                                             e.target.style.display = 'none';
