@@ -15,7 +15,7 @@ const CATEGORY_ORDER = [
 const NAV_OPTIONS = [
   { label: 'Menu', key: 'menu' },
   { label: 'Runbook', key: 'runbook' },
-  { label: 'Shopping Items', key: 'shopping_items' },
+  // { label: 'Shopping Items', key: 'shopping_items' }, // temporarily hidden
   { label: 'Shopping List', key: 'shopping_list' },
   { label: 'Recipes', key: 'recipes' },
 ];
