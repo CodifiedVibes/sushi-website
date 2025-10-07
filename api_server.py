@@ -507,12 +507,26 @@ def create_event_menu():
         
         # Check if read_only column exists
         cursor = conn.cursor()
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'event_menus' AND column_name = 'read_only'
-        """)
-        has_readonly_column = cursor.fetchone() is not None
+        database_url = os.getenv('DATABASE_URL')
+        
+        if database_url:
+            # PostgreSQL syntax
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'event_menus' AND column_name = 'read_only'
+            """)
+        else:
+            # SQLite syntax
+            cursor.execute("""
+                PRAGMA table_info(event_menus)
+            """)
+            columns = cursor.fetchall()
+            has_readonly_column = any(col[1] == 'read_only' for col in columns)
+            cursor = conn.cursor()  # Reset cursor for the insert
+        
+        if database_url:
+            has_readonly_column = cursor.fetchone() is not None
         
         if has_readonly_column:
             # Use the new schema with read_only column
