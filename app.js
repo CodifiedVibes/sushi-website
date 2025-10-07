@@ -243,7 +243,7 @@ function App() {
       setCart(eventMenu.menu_data || []);
       setActiveNav('menu');
       setCurrentEventId(eventId);
-      setIsEventReadOnly(eventMenu.read_only || false);
+      setIsEventReadOnly(Boolean(eventMenu.read_only));
       console.log('Event menu loaded successfully:', eventMenu.name, 'Read-only:', eventMenu.read_only);
     } catch (error) {
       console.error('Failed to load event menu from URL:', error);
@@ -296,7 +296,7 @@ function App() {
   
   // Auto-save cart changes for events
   useEffect(() => {
-    if (currentEventId && cart.length > 0) {
+    if (currentEventId) {
       // Debounce the save to avoid too many API calls
       const timeoutId = setTimeout(async () => {
         try {
