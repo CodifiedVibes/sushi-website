@@ -219,7 +219,6 @@ function App() {
   
   // URL routing state
   const [currentEventId, setCurrentEventId] = useState(null);
-  const [isEventReadOnly, setIsEventReadOnly] = useState(false);
   
   // Function to extract event ID from URL
   const extractEventIdFromUrl = () => {
@@ -243,15 +242,13 @@ function App() {
       setCart(eventMenu.menu_data || []);
       setActiveNav('menu');
       setCurrentEventId(eventId);
-      setIsEventReadOnly(Boolean(eventMenu.read_only));
-      console.log('Event menu loaded successfully:', eventMenu.name, 'Read-only:', eventMenu.read_only);
+      console.log('Event menu loaded successfully:', eventMenu.name);
     } catch (error) {
       console.error('Failed to load event menu from URL:', error);
       // Don't show alert for URL-based loading, just log the error
       // Clear any invalid event state
       setCurrentEventId(null);
       setSelectedEventMenu(null);
-      setIsEventReadOnly(false);
     }
   };
   
@@ -404,10 +401,6 @@ function App() {
 
   // 3. Add/update/remove item in cart
   const addToCart = (item) => {
-    if (isEventReadOnly) {
-      alert('This event is read-only. You cannot modify the menu.');
-      return;
-    }
     setCart(prev => {
       const found = prev.find(i => i.name === item.name && i.category === item.category);
       if (found) {
@@ -419,17 +412,9 @@ function App() {
     });
   };
   const removeFromCart = (item) => {
-    if (isEventReadOnly) {
-      alert('This event is read-only. You cannot modify the menu.');
-      return;
-    }
     setCart(prev => prev.filter(i => !(i.name === item.name && i.category === item.category)));
   };
   const setCartQuantity = (item, qty) => {
-    if (isEventReadOnly) {
-      alert('This event is read-only. You cannot modify the menu.');
-      return;
-    }
     if (qty < 1) return removeFromCart(item);
     setCart(prev => prev.map(i => i.name === item.name && i.category === item.category ? { ...i, quantity: Math.min(Math.max(qty, 1), 5) } : i));
   };
@@ -507,12 +492,11 @@ function App() {
   const [showCreateEventMenu, setShowCreateEventMenu] = useState(false);
   const [eventMenuName, setEventMenuName] = useState('');
   const [eventMenuDescription, setEventMenuDescription] = useState('');
-  const [eventMenuReadOnly, setEventMenuReadOnly] = useState(false);
 
   // Event Menu API functions
-  const createEventMenu = async (name, description, menuData, readOnly = false) => {
+  const createEventMenu = async (name, description, menuData) => {
     try {
-      console.log('Creating event menu with data:', { name, description, menuData, readOnly });
+      console.log('Creating event menu with data:', { name, description, menuData });
       
       const response = await fetch(`${API_BASE_URL}/event-menus`, {
         method: 'POST',
@@ -522,8 +506,7 @@ function App() {
         body: JSON.stringify({
           name,
           description,
-          menu_data: menuData,
-          read_only: readOnly
+          menu_data: menuData
         })
       });
       
@@ -1735,28 +1718,13 @@ function App() {
           <h2 className="text-xl font-bold text-[#00D4AA]">Shopping Cart</h2>
           <button
             onClick={() => setShowCreateEventMenu(true)}
-            disabled={isEventReadOnly}
-            className={`px-3 py-1 rounded-[8px] text-sm font-semibold transition-colors ${
-              isEventReadOnly 
-                ? 'bg-[#666] text-[#999] cursor-not-allowed' 
-                : 'bg-[#00D4AA] hover:bg-[#00B894] text-white'
-            }`}
-            title={isEventReadOnly ? "Cannot create events in read-only mode" : "Create Event Menu"}
+            className="bg-[#00D4AA] hover:bg-[#00B894] text-white px-3 py-1 rounded-[8px] text-sm font-semibold transition-colors"
+            title="Create Event Menu"
           >
             📅 Event
           </button>
         </div>
         
-        {/* Read-only indicator */}
-        {isEventReadOnly && (
-          <div className="bg-[#FF6B6B] bg-opacity-20 border border-[#FF6B6B] rounded-[8px] p-3 mb-4">
-            <div className="flex items-center space-x-2">
-              <span className="text-[#FF6B6B]">🔒</span>
-              <span className="text-[#FF6B6B] text-sm font-semibold">Read-Only Event</span>
-            </div>
-            <p className="text-[#FF6B6B] text-xs mt-1">This menu cannot be modified</p>
-          </div>
-        )}
         {/* Top: Menu item summary */}
         <div className="mb-4">
           {getCartSummary(cart).length === 0 && <div className="text-[#b0b8c1] italic">No items selected.</div>}
@@ -1961,7 +1929,6 @@ function App() {
                   setShowCreateEventMenu(false);
                   setEventMenuName('');
                   setEventMenuDescription('');
-                  setEventMenuReadOnly(false);
                 }}
               >
                 ×
@@ -1991,18 +1958,6 @@ function App() {
                 />
               </div>
               
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id="readOnly"
-                  checked={eventMenuReadOnly}
-                  onChange={(e) => setEventMenuReadOnly(e.target.checked)}
-                  className="w-4 h-4 text-[#00D4AA] bg-[#1a1a1a] border-[#3a3a3a] rounded focus:ring-[#00D4AA] focus:ring-2"
-                />
-                <label htmlFor="readOnly" className="text-sm text-white">
-                  Read-only event (guests can view but not modify the menu)
-                </label>
-              </div>
               
               <div className="bg-[#1a1a1a] rounded-[8px] p-3">
                 <div className="text-sm text-[#b0b8c1] mb-2">Selected Items ({cart.length})</div>
@@ -2021,7 +1976,6 @@ function App() {
                     setShowCreateEventMenu(false);
                     setEventMenuName('');
                     setEventMenuDescription('');
-                    setEventMenuReadOnly(false);
                   }}
                   className="flex-1 px-4 py-2 bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white rounded-[8px] font-semibold transition-colors"
                 >
@@ -2056,8 +2010,7 @@ function App() {
                       const result = await createEventMenu(
                         eventMenuName.trim(),
                         eventMenuDescription.trim(),
-                        cart,
-                        eventMenuReadOnly
+                        cart
                       );
                       
                       const shareUrl = `${window.location.origin}/event/${result.unique_id}`;
