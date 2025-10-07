@@ -449,13 +449,14 @@ def create_event_menu():
         expires_at = datetime.now() + timedelta(days=30)
         
         cursor = conn.execute("""
-            INSERT INTO event_menus (unique_id, name, description, menu_data, expires_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO event_menus (unique_id, name, description, menu_data, read_only, expires_at)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, (
             unique_id,
             data['name'],
             data.get('description', ''),
             json.dumps(data['menu_data']),
+            data.get('read_only', False),
             expires_at
         ))
         
@@ -466,6 +467,7 @@ def create_event_menu():
             'unique_id': unique_id,
             'name': data['name'],
             'description': data.get('description', ''),
+            'read_only': data.get('read_only', False),
             'expires_at': expires_at.isoformat()
         }), 201
         

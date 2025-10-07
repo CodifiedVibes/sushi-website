@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS event_menus (
     name VARCHAR(100) NOT NULL,
     description TEXT,
     menu_data JSONB,
+    read_only BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP
 );

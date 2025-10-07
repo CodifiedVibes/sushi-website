@@ -79,6 +79,7 @@ CREATE TABLE event_menus (
     name TEXT NOT NULL,
     description TEXT,
     menu_data TEXT NOT NULL, -- JSON string of selected menu items
+    read_only BOOLEAN DEFAULT FALSE,
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
