@@ -707,6 +707,25 @@ def debug_database():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/add-readonly-column', methods=['POST'])
+def add_readonly_column():
+    """Simple endpoint to add read_only column"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Try to add the column
+        cursor.execute("ALTER TABLE event_menus ADD COLUMN read_only BOOLEAN DEFAULT FALSE")
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'message': 'read_only column added successfully'}), 200
+        
+    except Exception as e:
+        if 'already exists' in str(e) or 'duplicate column' in str(e):
+            return jsonify({'message': 'read_only column already exists'}), 200
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/migrate-readonly', methods=['POST'])
 def migrate_readonly_endpoint():
     """Manual endpoint to trigger read_only column migration"""
