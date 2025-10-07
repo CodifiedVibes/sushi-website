@@ -18,7 +18,6 @@ const NAV_OPTIONS = [
   { label: 'Shopping Items', key: 'shopping_items' },
   { label: 'Shopping List', key: 'shopping_list' },
   { label: 'Recipes', key: 'recipes' },
-  { label: 'My Events', key: 'my_events' },
 ];
 
 const COLORS = {
