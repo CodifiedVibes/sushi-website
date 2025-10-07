@@ -460,9 +460,9 @@ function App() {
 
   // Main content margin for cart, tips panel, and recipe modal
   const mainContentStyle = {
-    marginRight: (activeNav === 'menu' && cart.length > 0) ? 320 : 
-                 (activeNav === 'runbook' && selectedRunbookItem) ? 400 :
-                 (activeNav === 'recipes' && selectedRecipe) ? 400 : 0,
+    marginRight: (activeNav === 'menu' && cart.length > 0) ? '320px' : 
+                 (activeNav === 'runbook' && selectedRunbookItem) ? '400px' :
+                 (activeNav === 'recipes' && selectedRecipe) ? '400px' : '0px',
     transition: 'margin-right 0.3s',
   };
 
@@ -869,7 +869,7 @@ function App() {
         <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><rect y="4" width="24" height="2" rx="1" fill="#00D4AA"/><rect y="11" width="24" height="2" rx="1" fill="#00D4AA"/><rect y="18" width="24" height="2" rx="1" fill="#00D4AA"/></svg>
       </button>
       <main className="flex-1 flex flex-col sm:ml-56 ml-0 transition-all duration-300" style={mainContentStyle}>
-        <div className="max-w-4xl w-full py-10 px-4 main-content">
+        <div className="max-w-7xl w-full py-10 px-4 main-content">
           {/* Always show menu page unless on shopping_items */}
           {activeNav === 'menu' && (
             <section id="menu">
@@ -930,7 +930,7 @@ function App() {
                 {menuFilter === 'all' && (
                   <div>
                     <h3 className="text-sm font-semibold text-[#b0b8c1] mb-2 uppercase tracking-wide">Browse by Category</h3>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
                       {orderedCategories.map((cat) => {
                         const isSelected = selectedCategories.has(cat);
                         return (
@@ -1012,7 +1012,7 @@ function App() {
                     }
                   }
                   return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
                       {colMajorItems.map((item, idx) => {
                         const cartItem = getCartItem(item);
                         const categoryColors = {
@@ -1120,7 +1120,7 @@ function App() {
                           );
                         })()}
                         <div className={`overflow-hidden transition-all duration-300 ${openCategories[cat] ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {menu[cat].map((item, idx) => {
                               const cartItem = getCartItem(item);
                               return (
@@ -1480,7 +1480,7 @@ function App() {
             </div>
 
             {/* Recipe Cards */}
-            <div className="grid gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredRecipes.map(recipe => (
                 <div
                   key={recipe.id}
@@ -1592,7 +1592,7 @@ function App() {
                 </div>
 
                 {/* Shopping List Tables - Side by Side */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8 mb-6">
                   {/* Need to Buy Table */}
                   <div>
                     <h3 className="text-lg font-semibold mb-4 text-[#00D4AA]">Need to Buy</h3>
@@ -1715,7 +1715,7 @@ function App() {
         </section>
       )}
       {/* Shopping Cart (right) - only on menu page */}
-      <aside className={`shopping-cart fixed top-0 right-0 h-full w-[300px] bg-[#2a2a2a] shadow-2xl z-40 p-6 flex flex-col gap-4 rounded-l-[18px] border-l border-[#00D4AA] animate-float-cart transition-all duration-300 ${(activeNav === 'menu' && cart.length > 0) ? '' : 'hidden'}`} style={{boxShadow: '0 8px 32px 0 #00D4AA55'}}>
+      <aside className={`shopping-cart fixed top-0 right-0 h-full w-[300px] xl:w-[400px] bg-[#2a2a2a] shadow-2xl z-40 p-6 flex flex-col gap-4 rounded-l-[18px] border-l border-[#00D4AA] animate-float-cart transition-all duration-300 ${(activeNav === 'menu' && cart.length > 0) ? '' : 'hidden'}`} style={{boxShadow: '0 8px 32px 0 #00D4AA55'}}>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl font-bold text-[#00D4AA]">Shopping Cart</h2>
           <button
