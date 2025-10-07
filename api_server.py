@@ -40,6 +40,43 @@ def get_db_connection():
     
     return conn
 
+def migrate_readonly_column():
+    """Add read_only column to event_menus table if it doesn't exist"""
+    database_url = os.getenv('DATABASE_URL')
+    
+    if not database_url:
+        return
+    
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # Check if read_only column already exists
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'event_menus' AND column_name = 'read_only'
+            """)
+            
+            if cursor.fetchone():
+                print("✅ read_only column already exists")
+                conn.close()
+                return
+            
+            # Add read_only column
+            print("🔄 Adding read_only column to event_menus table...")
+            cursor.execute("""
+                ALTER TABLE event_menus 
+                ADD COLUMN read_only BOOLEAN DEFAULT FALSE
+            """)
+            
+            conn.commit()
+            print("✅ Successfully added read_only column")
+            
+        conn.close()
+        
+    except Exception as e:
+        print(f"❌ Migration failed: {e}")
+
 def check_and_initialize_database():
     """Check if database has data and initialize if empty"""
     database_url = os.getenv('DATABASE_URL')
@@ -47,6 +84,9 @@ def check_and_initialize_database():
     if not database_url:
         # Skip initialization for local SQLite
         return
+    
+    # First, run migration to add read_only column if needed
+    migrate_readonly_column()
     
     try:
         conn = get_db_connection()
