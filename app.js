@@ -841,7 +841,7 @@ function App() {
       {/* Left Nav */}
       <aside className={`fixed z-30 top-0 left-0 h-full bg-[#1a1a1a] shadow-lg transition-transform duration-300 ${navOpen ? 'translate-x-0' : '-translate-x-full'} sm:translate-x-0 w-64 sm:w-56 flex flex-col solana-gradient-border`} style={{borderRadius: 0}}>
         <div className="flex items-center justify-between px-6 py-5">
-          <span className="text-2xl font-bold tracking-tight text-[#00D4AA]" style={{letterSpacing: '0.05em'}}>CASSaROLL v2</span>
+          <span className="text-2xl font-bold tracking-tight text-[#00D4AA]" style={{letterSpacing: '0.05em'}}>CASSaROLL</span>
           <button className="sm:hidden text-2xl text-[#00D4AA] focus:outline-none" onClick={() => setNavOpen(false)}>&times;</button>
         </div>
         <div className="mx-4 mb-4 p-3 bg-[#2a2a2a] rounded-[12px] shadow flex flex-col items-start cursor-pointer hover:bg-[#232946] transition" onClick={() => handleNavClick('cart')}>
