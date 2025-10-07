@@ -528,8 +528,16 @@ def create_event_menu():
         if database_url:
             has_readonly_column = cursor.fetchone() is not None
         
-        if has_readonly_column:
-            # Use the new schema with read_only column
+        # Check if host_name column exists
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'event_menus' AND column_name = 'host_name'
+        """)
+        has_hostname_column = cursor.fetchone() is not None
+        
+        if has_readonly_column and has_hostname_column:
+            # Use the new schema with both columns
             cursor.execute("""
                 INSERT INTO event_menus (unique_id, name, description, menu_data, read_only, host_name, expires_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -542,8 +550,8 @@ def create_event_menu():
                 data.get('host_name', ''),
                 expires_at
             ))
-        else:
-            # Use the old schema without read_only column
+        elif has_hostname_column:
+            # Use schema with host_name but no read_only
             cursor.execute("""
                 INSERT INTO event_menus (unique_id, name, description, menu_data, host_name, expires_at)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -555,6 +563,31 @@ def create_event_menu():
                 data.get('host_name', ''),
                 expires_at
             ))
+        elif has_readonly_column:
+            # Use schema with read_only but no host_name
+            cursor.execute("""
+                INSERT INTO event_menus (unique_id, name, description, menu_data, read_only, expires_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                unique_id,
+                data['name'],
+                data.get('description', ''),
+                json.dumps(data['menu_data']),
+                data.get('read_only', False),
+                expires_at
+            ))
+        else:
+            # Use the old schema without either column
+            cursor.execute("""
+                INSERT INTO event_menus (unique_id, name, description, menu_data, expires_at)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                unique_id,
+                data['name'],
+                data.get('description', ''),
+                json.dumps(data['menu_data']),
+                expires_at
+            ))
         
         conn.commit()
         
@@ -563,9 +596,11 @@ def create_event_menu():
             'unique_id': unique_id,
             'name': data['name'],
             'description': data.get('description', ''),
-            'host_name': data.get('host_name', ''),
             'expires_at': expires_at.isoformat()
         }
+        
+        if has_hostname_column:
+            response_data['host_name'] = data.get('host_name', '')
         
         if has_readonly_column:
             response_data['read_only'] = data.get('read_only', False)
