@@ -822,7 +822,7 @@ function App() {
       {/* Left Nav */}
       <aside className={`fixed z-30 top-0 left-0 h-full bg-[#1a1a1a] shadow-lg transition-transform duration-300 ${navOpen ? 'translate-x-0' : '-translate-x-full'} sm:translate-x-0 w-64 sm:w-56 flex flex-col solana-gradient-border`} style={{borderRadius: 0}}>
         <div className="flex items-center justify-between px-6 py-5">
-          <span className="text-2xl font-bold tracking-tight text-[#00D4AA]" style={{letterSpacing: '0.05em'}}>CASSaROLL</span>
+          <span className="text-2xl font-bold tracking-tight text-[#00D4AA]" style={{letterSpacing: '0.05em'}}>CASSaROLL v2</span>
           <button className="sm:hidden text-2xl text-[#00D4AA] focus:outline-none" onClick={() => setNavOpen(false)}>&times;</button>
         </div>
         <div className="mx-4 mb-4 p-3 bg-[#2a2a2a] rounded-[12px] shadow flex flex-col items-start cursor-pointer hover:bg-[#232946] transition" onClick={() => handleNavClick('cart')}>
@@ -1427,111 +1427,6 @@ function App() {
         </div>
       </main>
       
-      {/* My Events Page - Full Width */}
-      {activeNav === 'my_events' && (
-        <section id="my-events" className="w-full py-10 px-4">
-          <div className="w-full">
-            <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">My Events</h2>
-            
-            <div className="bg-[#2a2a2a] rounded-[12px] p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4 text-white">Lookup Event Menu</h3>
-              <div className="flex gap-4 items-end">
-                <div className="flex-1">
-                  <label className="block text-sm mb-2 text-[#b0b8c1]">Event ID</label>
-                  <input
-                    type="text"
-                    placeholder="Enter event ID (e.g., a1b2c3d4)"
-                    className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white placeholder-[#b0b8c1] focus:border-[#00D4AA] focus:outline-none"
-                    onKeyPress={async (e) => {
-                      if (e.key === 'Enter') {
-                        const eventId = e.target.value.trim();
-                        if (eventId) {
-                          try {
-                            const eventMenu = await getEventMenu(eventId);
-                            setSelectedEventMenu(eventMenu);
-                            setCart(eventMenu.menu_data || []);
-                            setActiveNav('menu');
-                            setCurrentEventId(eventId);
-                            // Update URL to reflect the loaded event
-                            window.history.pushState({}, '', `/event/${eventId}`);
-                          } catch (error) {
-                            alert('Event menu not found or expired');
-                          }
-                        }
-                      }
-                    }}
-                  />
-                </div>
-                <button
-                  onClick={async () => {
-                    const input = document.querySelector('input[placeholder*="Enter event ID"]');
-                    const eventId = input.value.trim();
-                    if (eventId) {
-                      try {
-                        const eventMenu = await getEventMenu(eventId);
-                        setSelectedEventMenu(eventMenu);
-                        setCart(eventMenu.menu_data || []);
-                        setActiveNav('menu');
-                        setCurrentEventId(eventId);
-                        // Update URL to reflect the loaded event
-                        window.history.pushState({}, '', `/event/${eventId}`);
-                      } catch (error) {
-                        alert('Event menu not found or expired');
-                      }
-                    }
-                  }}
-                  className="px-4 py-2 bg-[#00D4AA] hover:bg-[#00B894] text-white rounded-[8px] font-semibold transition-colors"
-                >
-                  Load Event
-                </button>
-              </div>
-            </div>
-
-            {selectedEventMenu && (
-              <div className="bg-[#2a2a2a] rounded-[12px] p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white">{selectedEventMenu.name}</h3>
-                  <button
-                    onClick={() => {
-                      setSelectedEventMenu(null);
-                      setCart([]);
-                      setCurrentEventId(null);
-                      // Reset URL to home page
-                      window.history.pushState({}, '', '/');
-                    }}
-                    className="text-[#b0b8c1] hover:text-white"
-                  >
-                    ✕
-                  </button>
-                </div>
-                {selectedEventMenu.description && (
-                  <p className="text-[#b0b8c1] mb-4">{selectedEventMenu.description}</p>
-                )}
-                <div className="text-sm text-[#b0b8c1] mb-4">
-                  Created: {new Date(selectedEventMenu.created_at).toLocaleDateString()}
-                </div>
-                <div className="space-y-2">
-                  <h4 className="text-md font-semibold text-[#00D4AA]">Menu Items:</h4>
-                  {getCartSummary(selectedEventMenu.menu_data || []).map((item, idx) => {
-                    const categoryColors = {
-                      'Appetizer': '#FF69B4',
-                      'Nigiri': '#9945FF',
-                      'Maki Rolls': '#3B82F6',
-                      'Speciality Rolls': '#00D4AA'
-                    };
-                    const categoryColor = categoryColors[item.category] || '#b0b8c1';
-                    return (
-                      <div key={idx} className="bg-[#1a1a1a] rounded-[8px] px-3 py-2 text-white text-sm">
-                        {item.count}x {item.name} (<span style={{ color: categoryColor, fontWeight: 'bold' }}>{item.category}</span>)
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
 
       {/* Recipes Page - Full Width */}
       {activeNav === 'recipes' && (
