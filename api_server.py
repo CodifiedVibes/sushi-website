@@ -632,6 +632,40 @@ def delete_event_menu(unique_id):
     finally:
         conn.close()
 
+@app.route('/api/debug-db', methods=['GET'])
+def debug_database():
+    """Debug endpoint to check database connection and table structure"""
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # Check if event_menus table exists
+            cursor.execute("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_name = 'event_menus'
+            """)
+            table_exists = cursor.fetchone()
+            
+            # Check columns in event_menus table
+            cursor.execute("""
+                SELECT column_name, data_type, column_default
+                FROM information_schema.columns 
+                WHERE table_name = 'event_menus'
+                ORDER BY ordinal_position
+            """)
+            columns = cursor.fetchall()
+            
+        conn.close()
+        
+        return jsonify({
+            'table_exists': bool(table_exists),
+            'columns': [dict(col) for col in columns],
+            'database_url_set': bool(os.getenv('DATABASE_URL'))
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/migrate-readonly', methods=['POST'])
 def migrate_readonly_endpoint():
     """Manual endpoint to trigger read_only column migration"""
