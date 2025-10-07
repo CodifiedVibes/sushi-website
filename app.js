@@ -293,6 +293,23 @@ function App() {
   
   // Remove shoppingMode state
   // const [shoppingMode, setShoppingMode] = useState(false);
+  
+  // Auto-save cart changes for events
+  useEffect(() => {
+    if (currentEventId && cart.length > 0) {
+      // Debounce the save to avoid too many API calls
+      const timeoutId = setTimeout(async () => {
+        try {
+          await updateEventMenu(currentEventId, { menu_data: cart });
+          console.log('Event menu updated successfully');
+        } catch (error) {
+          console.error('Failed to update event menu:', error);
+        }
+      }, 1000); // Save after 1 second of no changes
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [cart, currentEventId]);
   const [runbookDone, setRunbookDone] = useState([]); // array of indices
   const [hoveredRunbook, setHoveredRunbook] = useState(null); // index of hovered row
   const [selectedCategories, setSelectedCategories] = useState(new Set()); // Track selected category filters
