@@ -240,7 +240,7 @@ function App() {
       const eventMenu = await getEventMenu(eventId);
       setSelectedEventMenu(eventMenu);
       setCart(eventMenu.menu_data || []);
-      setActiveNav('menu');
+      setActiveNav('cart'); // Land on Cart page for shared events
       setCurrentEventId(eventId);
       console.log('Event menu loaded successfully:', eventMenu.name);
     } catch (error) {
@@ -1945,7 +1945,7 @@ function App() {
                   type="text"
                   value={eventMenuName}
                   onChange={(e) => setEventMenuName(e.target.value)}
-                  placeholder="e.g., Sushi Night Oct 10"
+                  placeholder=""
                   className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white placeholder-[#b0b8c1] focus:border-[#00D4AA] focus:outline-none"
                 />
               </div>
@@ -1955,7 +1955,7 @@ function App() {
                 <textarea
                   value={eventMenuDescription}
                   onChange={(e) => setEventMenuDescription(e.target.value)}
-                  placeholder="Add a description for your event..."
+                  placeholder=""
                   rows={3}
                   className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white placeholder-[#b0b8c1] focus:border-[#00D4AA] focus:outline-none resize-none"
                 />
@@ -1967,7 +1967,7 @@ function App() {
                   type="text"
                   value={eventMenuHostName}
                   onChange={(e) => setEventMenuHostName(e.target.value)}
-                  placeholder="e.g., John's Sushi Night"
+                  placeholder=""
                   className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white placeholder-[#b0b8c1] focus:border-[#00D4AA] focus:outline-none"
                 />
               </div>
