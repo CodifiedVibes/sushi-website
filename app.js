@@ -930,7 +930,7 @@ function App() {
                 {menuFilter === 'all' && (
                   <div>
                     <h3 className="text-sm font-semibold text-[#b0b8c1] mb-2 uppercase tracking-wide">Browse by Category</h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {orderedCategories.map((cat) => {
                         const isSelected = selectedCategories.has(cat);
                         return (
@@ -1480,7 +1480,7 @@ function App() {
             </div>
 
             {/* Recipe Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid gap-4">
               {filteredRecipes.map(recipe => (
                 <div
                   key={recipe.id}
@@ -1592,7 +1592,7 @@ function App() {
                 </div>
 
                 {/* Shopping List Tables - Side by Side */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8 mb-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
                   {/* Need to Buy Table */}
                   <div>
                     <h3 className="text-lg font-semibold mb-4 text-[#00D4AA]">Need to Buy</h3>
