@@ -869,7 +869,7 @@ function App() {
         <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><rect y="4" width="24" height="2" rx="1" fill="#00D4AA"/><rect y="11" width="24" height="2" rx="1" fill="#00D4AA"/><rect y="18" width="24" height="2" rx="1" fill="#00D4AA"/></svg>
       </button>
       <main className="flex-1 flex flex-col sm:ml-56 ml-0 transition-all duration-300" style={mainContentStyle}>
-        <div className="max-w-6xl w-full py-10 px-4 main-content">
+        <div className="max-w-4xl w-full py-10 px-4 main-content">
           {/* Always show menu page unless on shopping_items */}
           {activeNav === 'menu' && (
             <section id="menu">
