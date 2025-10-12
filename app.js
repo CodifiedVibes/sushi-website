@@ -460,7 +460,7 @@ function App() {
 
   // Main content margin for cart, tips panel, and recipe modal
   const mainContentStyle = {
-    marginRight: (activeNav === 'menu' && cart.length > 0) ? '320px' : 
+    marginRight: (activeNav === 'menu') ? '320px' : 
                  (activeNav === 'runbook' && selectedRunbookItem) ? '400px' :
                  (activeNav === 'recipes' && selectedRecipe) ? '400px' : '0px',
     transition: 'margin-right 0.3s',
@@ -926,30 +926,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* Browse by Category Section - only show when "All" is selected */}
-                {menuFilter === 'all' && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-[#b0b8c1] mb-2 uppercase tracking-wide">Browse by Category</h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {orderedCategories.map((cat) => {
-                        const isSelected = selectedCategories.has(cat);
-                        return (
-                          <button
-                            key={cat}
-                            className={`px-4 py-3 rounded-[12px] font-medium transition-all duration-200 text-sm ${
-                              isSelected 
-                                ? 'bg-[#00D4AA] text-[#1a1a1a] shadow-lg' 
-                                : 'bg-[#2a2a2a] text-[#b0b8c1] hover:bg-[#3a3a3a] hover:shadow-md'
-                            }`}
-                            onClick={() => toggleCategoryFilter(cat)}
-                          >
-                            {cat}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* If a purple filter is active, show a flat grid of filtered items */}
@@ -1715,7 +1691,7 @@ function App() {
         </section>
       )}
       {/* Shopping Cart (right) - only on menu page */}
-      <aside className={`shopping-cart fixed top-0 right-0 h-full w-[300px] xl:w-[400px] bg-[#2a2a2a] shadow-2xl z-40 p-6 flex flex-col gap-4 rounded-l-[18px] border-l border-[#00D4AA] animate-float-cart transition-all duration-300 ${(activeNav === 'menu' && cart.length > 0) ? '' : 'hidden'}`} style={{boxShadow: '0 8px 32px 0 #00D4AA55'}}>
+      <aside className={`shopping-cart fixed top-0 right-0 h-full w-[300px] xl:w-[400px] bg-[#2a2a2a] shadow-2xl z-40 p-6 flex flex-col gap-4 rounded-l-[18px] border-l border-[#00D4AA] animate-float-cart transition-all duration-300 ${(activeNav === 'menu') ? '' : 'hidden'}`} style={{boxShadow: '0 8px 32px 0 #00D4AA55'}}>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl font-bold text-[#00D4AA]">Shopping Cart</h2>
           <button
