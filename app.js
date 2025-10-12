@@ -312,6 +312,7 @@ function App() {
   const [selectedCategories, setSelectedCategories] = useState(new Set()); // Track selected category filters
   const [runbookFilter, setRunbookFilter] = useState('beginner'); // 'beginner' or 'advanced'
   const [selectedRunbookItem, setSelectedRunbookItem] = useState(null); // Selected item for tips panel
+  const [runbookDefaultSet, setRunbookDefaultSet] = useState(false); // Track if default runbook item has been set
   const [menuFilter, setMenuFilter] = useState('all'); // all, top-ranked, salmon, tuna, veggie
 
   useEffect(() => {
@@ -364,6 +365,17 @@ function App() {
 
     return () => clearTimeout(fallbackTimer);
   }, []);
+
+  // Set default runbook item to "Order Fish" when runbook data is loaded
+  useEffect(() => {
+    if (runbook.length > 0 && !runbookDefaultSet) {
+      const orderFishItem = runbook.find(item => item.activity === 'Order Fish');
+      if (orderFishItem) {
+        setSelectedRunbookItem(orderFishItem);
+        setRunbookDefaultSet(true);
+      }
+    }
+  }, [runbook, runbookDefaultSet]);
 
   const toggleCategory = (cat) => {
     setOpenCategories((prev) => ({ ...prev, [cat]: !prev[cat] }));
@@ -461,7 +473,7 @@ function App() {
   // Main content margin for cart, tips panel, and recipe modal
   const mainContentStyle = {
     marginRight: (activeNav === 'menu') ? '320px' : 
-                 (activeNav === 'runbook' && selectedRunbookItem) ? '400px' :
+                 (activeNav === 'runbook') ? '400px' :
                  (activeNav === 'recipes' && selectedRecipe) ? '400px' : '0px',
     transition: 'margin-right 0.3s',
   };
@@ -1772,7 +1784,7 @@ function App() {
       </aside>
       
       {/* Tips Panel (right) - only on runbook page */}
-      <aside className={`tips-panel fixed top-0 right-0 h-full w-[400px] bg-[#2a2a2a] shadow-2xl z-40 p-6 flex flex-col gap-4 rounded-l-[18px] border-l border-[#00D4AA] transition-all duration-300 ${(activeNav === 'runbook' && selectedRunbookItem) ? '' : 'hidden'}`} style={{boxShadow: '0 8px 32px 0 #00D4AA55'}}>
+      <aside className={`tips-panel fixed top-0 right-0 h-full w-[400px] bg-[#2a2a2a] shadow-2xl z-40 p-6 flex flex-col gap-4 rounded-l-[18px] border-l border-[#00D4AA] transition-all duration-300 ${(activeNav === 'runbook') ? '' : 'hidden'}`} style={{boxShadow: '0 8px 32px 0 #00D4AA55'}}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-[#00D4AA]">Tips</h2>
           <button 
