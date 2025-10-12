@@ -877,53 +877,50 @@ function App() {
               
               {/* Filter Sections */}
               <div className="mb-6 space-y-4">
-                {/* Popular Picks Section */}
-                <div>
-                  <h3 className="text-sm font-semibold text-[#b0b8c1] mb-2 uppercase tracking-wide">Popular Picks</h3>
-                  <div className="flex items-center gap-4">
-                    <div className="flex gap-2">
-                      {[
-                        { key: 'all', label: 'All' },
-                        { key: 'top', label: 'Top Ranked' },
-                        { key: 'salmon', label: 'Salmon Favorites' },
-                        { key: 'tuna', label: 'Tuna Favorites' },
-                        { key: 'veggie', label: 'Veggie Favorites' },
-                      ].map(f => (
-                        <button
-                          key={f.key}
-                          className={`px-2 py-1 rounded-[8px] text-xs font-semibold border-2 transition-all duration-200
-                            ${menuFilter === f.key ? 'bg-[#2a2a2a] text-white border-[#3a3a3a]' : 'bg-transparent text-[#b0b8c1] border-[#3a3a3a] hover:bg-[#2a2a2a]'}`}
-                          style={{ minWidth: 80 }}
-                          onClick={() => setMenuFilter(f.key)}
-                        >
-                          {f.label}
-                        </button>
-                      ))}
-                    </div>
-                    
-                    {/* Color Legend - only show when a Popular Pick filter is active */}
-                    {menuFilter !== 'all' && (
-                      <div className="flex items-center gap-3 text-xs text-[#b0b8c1]">
-                        <span className="font-medium">Colors:</span>
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full border border-[#FF69B4]"></div>
-                          <span>Appetizer</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full border border-[#9945FF]"></div>
-                          <span>Nigiri</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full border border-[#3B82F6]"></div>
-                          <span>Maki</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full border border-[#00D4AA]"></div>
-                          <span>Speciality</span>
-                        </div>
-                      </div>
-                    )}
+                {/* Filter Section */}
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    {[
+                      { key: 'all', label: 'All' },
+                      { key: 'top', label: 'Top Ranked' },
+                      { key: 'salmon', label: 'Salmon Favorites' },
+                      { key: 'tuna', label: 'Tuna Favorites' },
+                      { key: 'veggie', label: 'Veggie Favorites' },
+                    ].map(f => (
+                      <button
+                        key={f.key}
+                        className={`px-2 py-1 rounded-[8px] text-xs font-semibold border-2 transition-all duration-200
+                          ${menuFilter === f.key ? 'bg-[#2a2a2a] text-white border-[#3a3a3a]' : 'bg-transparent text-[#b0b8c1] border-[#3a3a3a] hover:bg-[#2a2a2a]'}`}
+                        style={{ minWidth: 80 }}
+                        onClick={() => setMenuFilter(f.key)}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
                   </div>
+                  
+                  {/* Color Legend - only show when a filter is active (below buttons) */}
+                  {menuFilter !== 'all' && (
+                    <div className="flex items-center gap-3 text-xs text-[#b0b8c1]">
+                      <span className="font-medium">Colors:</span>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full border border-[#FF69B4]"></div>
+                        <span>Appetizer</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full border border-[#9945FF]"></div>
+                        <span>Nigiri</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full border border-[#3B82F6]"></div>
+                        <span>Maki</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full border border-[#00D4AA]"></div>
+                        <span>Speciality</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
               </div>
