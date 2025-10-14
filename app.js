@@ -1796,23 +1796,18 @@ function App() {
         </div>
         {selectedRunbookItem && (
           <div className="flex-1 overflow-y-auto">
-            {/* Title Box */}
+            {/* Title Box with Notes */}
             <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
-              <div className="flex justify-between items-start mb-2">
+              <div className="flex justify-between items-start mb-3">
                 <h3 className="text-lg font-semibold text-white flex-1">{selectedRunbookItem.activity}</h3>
                 <span className="bg-[#3a3a3a] px-2 py-1 rounded text-sm text-[#b0b8c1] ml-2">Runbook</span>
               </div>
-            </div>
-            
-            {/* Notes Section - Show first if available */}
-            {selectedRunbookItem.notes && (
-              <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
-                <h4 className="text-md font-semibold mb-3 text-[#00D4AA]">Notes</h4>
+              {selectedRunbookItem.notes && (
                 <div className="text-sm text-white" style={{whiteSpace: 'normal', lineHeight: '1.5'}}>
                   {selectedRunbookItem.notes}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
             
             {/* Combined Instructions */}
             {(selectedRunbookItem.beginner_steps || selectedRunbookItem.advanced_steps) && (
