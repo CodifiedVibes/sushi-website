@@ -15,9 +15,29 @@ from datetime import datetime, timedelta
 import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import re
 
 app = Flask(__name__, static_folder='.', static_url_path='')
-CORS(app)  # Enable CORS for frontend
+
+# Security: Configure CORS with specific origins
+CORS(app, origins=[
+    "https://cassaroll.io",
+    "https://www.cassaroll.io", 
+    "https://sushi-website-production.up.railway.app",
+    "http://localhost:8000",  # For local development
+    "http://127.0.0.1:8000"   # For local development
+])
+
+# Security: Add security headers
+@app.after_request
+def add_security_headers(response):
+    """Add security headers to all responses"""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    return response
 
 # Rate limiting setup
 limiter = Limiter(
@@ -25,6 +45,42 @@ limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["200 per day", "50 per hour"]
 )
+
+# Security: Input validation functions
+def validate_event_name(name):
+    """Validate event name - alphanumeric, spaces, hyphens, underscores only"""
+    if not name or len(name.strip()) == 0:
+        return False
+    if len(name) > 100:
+        return False
+    # Allow alphanumeric, spaces, hyphens, underscores, apostrophes
+    return bool(re.match(r"^[a-zA-Z0-9\s\-_'\.]+$", name))
+
+def validate_event_description(description):
+    """Validate event description"""
+    if not description:
+        return True  # Description is optional
+    if len(description) > 500:
+        return False
+    # Allow most characters except potential XSS
+    return not re.search(r'<script|javascript:|on\w+\s*=', description, re.IGNORECASE)
+
+def validate_host_name(host_name):
+    """Validate host name"""
+    if not host_name:
+        return True  # Host name is optional
+    if len(host_name) > 50:
+        return False
+    return bool(re.match(r"^[a-zA-Z0-9\s\-_'\.]+$", host_name))
+
+def sanitize_input(text):
+    """Basic input sanitization"""
+    if not text:
+        return text
+    # Remove potential XSS attempts
+    text = re.sub(r'<script.*?</script>', '', text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r'javascript:', '', text, flags=re.IGNORECASE)
+    return text.strip()
 
 def get_db_connection():
     """Create database connection - supports both SQLite (local) and PostgreSQL (Railway)"""
@@ -499,6 +555,25 @@ def create_event_menu():
         if not data or not data.get('name') or not data.get('menu_data'):
             return jsonify({'error': 'Name and menu_data are required'}), 400
         
+        # Security: Validate and sanitize inputs
+        event_name = data.get('name', '').strip()
+        event_description = data.get('description', '').strip()
+        host_name = data.get('host_name', '').strip()
+        
+        if not validate_event_name(event_name):
+            return jsonify({'error': 'Invalid event name. Use only letters, numbers, spaces, hyphens, and underscores.'}), 400
+        
+        if not validate_event_description(event_description):
+            return jsonify({'error': 'Invalid event description. Contains potentially harmful content.'}), 400
+            
+        if not validate_host_name(host_name):
+            return jsonify({'error': 'Invalid host name. Use only letters, numbers, spaces, hyphens, and underscores.'}), 400
+        
+        # Sanitize inputs
+        event_name = sanitize_input(event_name)
+        event_description = sanitize_input(event_description)
+        host_name = sanitize_input(host_name)
+        
         # Generate unique ID
         unique_id = str(uuid.uuid4())[:8]  # Short ID for easy sharing
         
@@ -552,11 +627,11 @@ def create_event_menu():
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
                 unique_id,
-                data['name'],
-                data.get('description', ''),
+                event_name,
+                event_description,
                 json.dumps(data['menu_data']),
                 data.get('read_only', False),
-                data.get('host_name', ''),
+                host_name,
                 expires_at
             ))
         elif has_hostname_column:
@@ -566,10 +641,10 @@ def create_event_menu():
                 VALUES (?, ?, ?, ?, ?, ?)
             """, (
                 unique_id,
-                data['name'],
-                data.get('description', ''),
+                event_name,
+                event_description,
                 json.dumps(data['menu_data']),
-                data.get('host_name', ''),
+                host_name,
                 expires_at
             ))
         elif has_readonly_column:
@@ -579,8 +654,8 @@ def create_event_menu():
                 VALUES (?, ?, ?, ?, ?, ?)
             """, (
                 unique_id,
-                data['name'],
-                data.get('description', ''),
+                event_name,
+                event_description,
                 json.dumps(data['menu_data']),
                 data.get('read_only', False),
                 expires_at
@@ -592,8 +667,8 @@ def create_event_menu():
                 VALUES (?, ?, ?, ?, ?)
             """, (
                 unique_id,
-                data['name'],
-                data.get('description', ''),
+                event_name,
+                event_description,
                 json.dumps(data['menu_data']),
                 expires_at
             ))
@@ -603,13 +678,13 @@ def create_event_menu():
         response_data = {
             'id': cursor.lastrowid,
             'unique_id': unique_id,
-            'name': data['name'],
-            'description': data.get('description', ''),
+            'name': event_name,
+            'description': event_description,
             'expires_at': expires_at.isoformat()
         }
         
         if has_hostname_column:
-            response_data['host_name'] = data.get('host_name', '')
+            response_data['host_name'] = host_name
         
         if has_readonly_column:
             response_data['read_only'] = data.get('read_only', False)
