@@ -1800,13 +1800,7 @@ function App() {
             <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
               <div className="flex justify-between items-start mb-3">
                 <h3 className="text-lg font-semibold text-white flex-1">{selectedRunbookItem.activity}</h3>
-                <span className={`px-2 py-1 rounded text-sm text-white ml-2 ${
-                  selectedRunbookItem.category === 'Planning & Shopping' ? 'bg-[#3B82F6]' :
-                  selectedRunbookItem.category === 'Prep Work' ? 'bg-[#00D4AA]' :
-                  selectedRunbookItem.category === 'Sauce Making' ? 'bg-[#FF69B4]' :
-                  selectedRunbookItem.category === 'Setup' ? 'bg-[#9945FF]' :
-                  'bg-[#3a3a3a] text-[#b0b8c1]'
-                }`}>
+                <span className="bg-[#3a3a3a] px-2 py-1 rounded text-sm text-[#b0b8c1] ml-2">
                   {selectedRunbookItem.category || 'Runbook'}
                 </span>
               </div>
