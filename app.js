@@ -1813,43 +1813,48 @@ function App() {
             {(selectedRunbookItem.beginner_steps || selectedRunbookItem.advanced_steps) && (
               <div className="bg-[#1a1a1a] rounded-[12px] p-4">
                 <h4 className="text-md font-semibold mb-3 text-[#00D4AA]">Instructions</h4>
-                <div className="text-sm text-white space-y-3" style={{whiteSpace: 'normal', lineHeight: '1.5'}}>
-                  {selectedRunbookItem.beginner_steps && (
-                    <div>
-                      <div className="font-medium text-[#00D4AA] mb-2">Basic Steps:</div>
-                      <div className="pl-4">
-                        {selectedRunbookItem.beginner_steps.split('|').map((step, idx) => (
-                          <div key={idx} className="mb-1">
-                            {step.trim() && (
-                              <div className="flex items-start gap-2">
-                                <span className="text-[#00D4AA] font-bold mt-0.5">•</span>
-                                <span>{step.trim()}</span>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                <div className="text-sm text-white space-y-2" style={{whiteSpace: 'normal', lineHeight: '1.5'}}>
+                  {selectedRunbookItem.beginner_steps && selectedRunbookItem.beginner_steps.split('|').map((step, idx) => (
+                    <div key={`beginner-${idx}`} className="mb-1">
+                      {step.trim() && (
+                        <div className="flex items-start gap-2">
+                          <span className="text-[#00D4AA] font-bold mt-0.5">•</span>
+                          <span>{step.trim()}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  ))}
                   
-                  {selectedRunbookItem.advanced_steps && (
-                    <div>
-                      <div className="font-medium text-[#00D4AA] mb-2">Advanced Steps:</div>
-                      <div className="pl-4">
-                        {selectedRunbookItem.advanced_steps.split('|').map((step, idx) => (
-                          <div key={idx} className="mb-1">
-                            {step.trim() && (
-                              <div className="flex items-start gap-2">
-                                <span className="text-[#00D4AA] font-bold mt-0.5">•</span>
-                                <span>{step.trim()}</span>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                  {selectedRunbookItem.advanced_steps && selectedRunbookItem.advanced_steps.split('|').map((step, idx) => (
+                    <div key={`advanced-${idx}`} className="mb-1">
+                      {step.trim() && (
+                        <div className="flex items-start gap-2">
+                          <span className="text-[#FF69B4] font-bold mt-0.5">•</span>
+                          <span>{step.trim()}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  ))}
                 </div>
+                
+                {/* Legend */}
+                {(selectedRunbookItem.beginner_steps || selectedRunbookItem.advanced_steps) && (
+                  <div className="flex items-center gap-3 text-xs text-[#b0b8c1] mt-3 pt-2 border-t border-[#3a3a3a]">
+                    <span className="font-medium">Colors:</span>
+                    {selectedRunbookItem.beginner_steps && (
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full border border-[#00D4AA]"></div>
+                        <span>Basic</span>
+                      </div>
+                    )}
+                    {selectedRunbookItem.advanced_steps && (
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full border border-[#FF69B4]"></div>
+                        <span>Advanced</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
