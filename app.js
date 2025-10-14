@@ -1796,42 +1796,64 @@ function App() {
         </div>
         {selectedRunbookItem && (
           <div className="flex-1 overflow-y-auto">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-2 text-white">{selectedRunbookItem.activity}</h3>
+            {/* Title Box */}
+            <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-lg font-semibold text-white flex-1">{selectedRunbookItem.activity}</h3>
+                <span className="bg-[#3a3a3a] px-2 py-1 rounded text-sm text-[#b0b8c1] ml-2">Runbook</span>
+              </div>
             </div>
             
-            {/* Beginner Steps */}
-            {selectedRunbookItem.beginner_steps && (
-              <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
-                <h4 className="text-md font-semibold mb-3 text-[#00D4AA] flex items-center gap-2">
-                  <span className="text-lg">🌱</span>
-                  Basic Steps
-                </h4>
-                <div className="text-sm text-white" style={{whiteSpace: 'normal', lineHeight: '1.5'}}>
-                  {selectedRunbookItem.beginner_steps}
-                </div>
-              </div>
-            )}
-            
-            {/* Advanced Steps */}
-            {selectedRunbookItem.advanced_steps && (
-              <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
-                <h4 className="text-md font-semibold mb-3 text-[#00D4AA] flex items-center gap-2">
-                  <span className="text-lg">⚡</span>
-                  Advanced Steps
-                </h4>
-                <div className="text-sm text-white" style={{whiteSpace: 'normal', lineHeight: '1.5'}}>
-                  {selectedRunbookItem.advanced_steps}
-                </div>
-              </div>
-            )}
-            
-            {/* Notes */}
+            {/* Notes Section - Show first if available */}
             {selectedRunbookItem.notes && (
-              <div className="bg-[#1a1a1a] rounded-[12px] p-4">
-                <h4 className="text-md font-semibold mb-2 text-[#00D4AA]">Notes</h4>
+              <div className="bg-[#1a1a1a] rounded-[12px] p-4 mb-4">
+                <h4 className="text-md font-semibold mb-3 text-[#00D4AA]">Notes</h4>
                 <div className="text-sm text-white" style={{whiteSpace: 'normal', lineHeight: '1.5'}}>
                   {selectedRunbookItem.notes}
+                </div>
+              </div>
+            )}
+            
+            {/* Combined Instructions */}
+            {(selectedRunbookItem.beginner_steps || selectedRunbookItem.advanced_steps) && (
+              <div className="bg-[#1a1a1a] rounded-[12px] p-4">
+                <h4 className="text-md font-semibold mb-3 text-[#00D4AA]">Instructions</h4>
+                <div className="text-sm text-white space-y-3" style={{whiteSpace: 'normal', lineHeight: '1.5'}}>
+                  {selectedRunbookItem.beginner_steps && (
+                    <div>
+                      <div className="font-medium text-[#00D4AA] mb-2">Basic Steps:</div>
+                      <div className="pl-4">
+                        {selectedRunbookItem.beginner_steps.split('|').map((step, idx) => (
+                          <div key={idx} className="mb-1">
+                            {step.trim() && (
+                              <div className="flex items-start gap-2">
+                                <span className="text-[#00D4AA] font-bold mt-0.5">•</span>
+                                <span>{step.trim()}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedRunbookItem.advanced_steps && (
+                    <div>
+                      <div className="font-medium text-[#00D4AA] mb-2">Advanced Steps:</div>
+                      <div className="pl-4">
+                        {selectedRunbookItem.advanced_steps.split('|').map((step, idx) => (
+                          <div key={idx} className="mb-1">
+                            {step.trim() && (
+                              <div className="flex items-start gap-2">
+                                <span className="text-[#00D4AA] font-bold mt-0.5">•</span>
+                                <span>{step.trim()}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
