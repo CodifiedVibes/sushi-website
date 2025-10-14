@@ -4,7 +4,7 @@ Flask API server for Sushi Restaurant
 Serves data from SQLite database
 """
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, render_template, make_response
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -16,6 +16,8 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import re
+from weasyprint import HTML, CSS
+from weasyprint.text.fonts import FontConfiguration
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 
@@ -905,6 +907,56 @@ def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
 
+@app.route('/api/generate-menu-pdf', methods=['POST'])
+@limiter.limit("5 per minute")  # Limit PDF generation to 5 per minute per IP
+def generate_menu_pdf():
+    """Generate PDF menu from cart data"""
+    try:
+        data = request.get_json()
+        if not data or not data.get('cart'):
+            return jsonify({'error': 'Cart data is required'}), 400
+        
+        cart = data.get('cart', [])
+        event_name = data.get('event_name', '')
+        host_name = data.get('host_name', '')
+        event_description = data.get('event_description', '')
+        
+        # Group cart items by category
+        cart_by_category = {}
+        for item in cart:
+            category = item.get('category', 'Other')
+            if category not in cart_by_category:
+                cart_by_category[category] = []
+            cart_by_category[category].append(item)
+        
+        # Prepare template data
+        template_data = {
+            'cart_items': cart_by_category,
+            'event_name': event_name,
+            'host_name': host_name,
+            'event_description': event_description,
+            'current_date': datetime.now().strftime('%B %d, %Y')
+        }
+        
+        # Render HTML template
+        html_content = render_template('menu_pdf.html', **template_data)
+        
+        # Generate PDF
+        font_config = FontConfiguration()
+        pdf_doc = HTML(string=html_content).render(font_config=font_config)
+        pdf_bytes = pdf_doc.write_pdf()
+        
+        # Create response
+        response = make_response(pdf_bytes)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename="sushi-menu-{datetime.now().strftime("%Y%m%d-%H%M%S")}.pdf"'
+        
+        return response
+        
+    except Exception as e:
+        print(f"Error generating PDF: {str(e)}")
+        return jsonify({'error': 'Failed to generate PDF'}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
     print("Starting Sushi Restaurant API Server...")
@@ -929,4 +981,5 @@ if __name__ == '__main__':
     print("  PUT /api/event-menus/<id> - Update event menu")
     print("  DELETE /api/event-menus/<id> - Delete event menu")
     print("  GET /api/event-menus - List all event menus")
+    print("  POST /api/generate-menu-pdf - Generate PDF menu from cart data")
     app.run(debug=False, host='0.0.0.0', port=port)

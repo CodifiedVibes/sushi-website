@@ -426,6 +426,41 @@ function App() {
   const removeFromCart = (item) => {
     setCart(prev => prev.filter(i => !(i.name === item.name && i.category === item.category)));
   };
+
+  const generatePDFMenu = async () => {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/generate-menu-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cart: cart,
+          event_name: currentEventId ? eventMenu?.name : '',
+          host_name: currentEventId ? eventMenu?.host_name : '',
+          event_description: currentEventId ? eventMenu?.description : ''
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sushi-menu-${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
+  };
   const setCartQuantity = (item, qty) => {
     if (qty < 1) return removeFromCart(item);
     setCart(prev => prev.map(i => i.name === item.name && i.category === item.category ? { ...i, quantity: Math.min(Math.max(qty, 1), 5) } : i));
@@ -1309,12 +1344,18 @@ function App() {
                       })()}
                     </tbody>
                   </table>
-                  <div className="flex justify-end items-center mt-4">
+                  <div className="flex justify-end items-center gap-3 mt-4">
+                    <button
+                      className="bg-[#FF69B4] text-white px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#E55A9B] transition"
+                      onClick={generatePDFMenu}
+                    >
+                      📄 Download PDF Menu
+                    </button>
                     <button
                       className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#00D4AA] border border-[#00D4AA] transition"
                       onClick={() => window.print()}
                     >
-                      Print / Export
+                      🖨️ Print
                     </button>
                   </div>
                 </div>
