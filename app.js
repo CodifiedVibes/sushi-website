@@ -315,6 +315,7 @@ function App() {
   const [runbookDefaultSet, setRunbookDefaultSet] = useState(false); // Track if default runbook item has been set
   const [menuFilter, setMenuFilter] = useState('all'); // all, top-ranked, salmon, tuna, veggie
   const [showShoppingCart, setShowShoppingCart] = useState(true); // Control shopping cart panel visibility
+  const [showTipsPanel, setShowTipsPanel] = useState(true); // Control tips panel visibility
 
   useEffect(() => {
     console.log('Starting data fetch...');
@@ -373,6 +374,7 @@ function App() {
       const orderFishItem = runbook.find(item => item.activity === 'Order Fish');
       if (orderFishItem) {
         setSelectedRunbookItem(orderFishItem);
+        setShowTipsPanel(true); // Show panel when default item is set
         setRunbookDefaultSet(true);
       }
     }
@@ -473,12 +475,16 @@ function App() {
     if (key === 'menu') {
       setShowShoppingCart(true);
     }
+    // Show tips panel again when navigating to runbook page
+    if (key === 'runbook') {
+      setShowTipsPanel(true);
+    }
   };
 
   // Main content margin for cart, tips panel, and recipe modal
   const mainContentStyle = {
     marginRight: (activeNav === 'menu' && showShoppingCart) ? '320px' : 
-                 (activeNav === 'runbook') ? '400px' :
+                 (activeNav === 'runbook' && showTipsPanel) ? '400px' :
                  (activeNav === 'recipes' && selectedRecipe) ? '400px' : '0px',
     transition: 'margin-right 0.3s',
   };
@@ -1417,6 +1423,7 @@ function App() {
                                   ${isSelected ? 'border-l-8 border-[#14F195] bg-[#181A20] text-white font-bold' : 'hover:bg-[#3a3a3a]'} relative`}
                                 onClick={() => {
                                   setSelectedRunbookItem(item);
+                                  setShowTipsPanel(true); // Show panel when item is selected
                                 }}
                               >
                                 <td className="px-4 py-2 whitespace-nowrap font-bold" style={{ color: isSelected ? '#fff' : '#00D4AA' }}>
@@ -1822,15 +1829,33 @@ function App() {
         })()}
       </aside>
       
+      {/* Tips Panel Expand Button (when minimized) */}
+      {activeNav === 'runbook' && !showTipsPanel && selectedRunbookItem && (
+        <button
+          onClick={() => setShowTipsPanel(true)}
+          className="fixed top-4 right-4 z-50 bg-[#00D4AA] hover:bg-[#00B894] text-white p-3 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center group"
+          title="Show Tips Panel"
+          style={{boxShadow: '0 4px 20px 0 #00D4AA66'}}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:scale-110 transition-transform">
+            <path d="M9 18l6-6-6-6"></path>
+          </svg>
+        </button>
+      )}
+
       {/* Tips Panel (right) - only on runbook page */}
-      <aside className={`tips-panel fixed top-0 right-0 h-full w-[400px] bg-[#2a2a2a] shadow-2xl z-40 p-6 flex flex-col gap-4 rounded-l-[18px] border-l border-[#00D4AA] transition-all duration-300 ${(activeNav === 'runbook') ? '' : 'hidden'}`} style={{boxShadow: '0 8px 32px 0 #00D4AA55'}}>
+      <aside className={`tips-panel fixed top-0 right-0 h-full w-[400px] bg-[#2a2a2a] shadow-2xl z-40 p-6 flex flex-col gap-4 rounded-l-[18px] border-l border-[#00D4AA] transition-all duration-300 ${(activeNav === 'runbook' && showTipsPanel) ? '' : 'hidden'}`} style={{boxShadow: '0 8px 32px 0 #00D4AA55'}}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-[#00D4AA]">Tips</h2>
           <button 
-            className="text-[#b0b8c1] hover:text-white transition"
-            onClick={() => setSelectedRunbookItem(null)}
+            className="text-[#b0b8c1] hover:text-white transition p-1 hover:bg-[#3a3a3a] rounded flex items-center justify-center"
+            onClick={() => setShowTipsPanel(false)}
+            title="Minimize Tips Panel"
           >
-            ✕
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
           </button>
         </div>
         {selectedRunbookItem && (
