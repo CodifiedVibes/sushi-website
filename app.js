@@ -895,7 +895,7 @@ function App() {
         <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><rect y="4" width="24" height="2" rx="1" fill="#00D4AA"/><rect y="11" width="24" height="2" rx="1" fill="#00D4AA"/><rect y="18" width="24" height="2" rx="1" fill="#00D4AA"/></svg>
       </button>
       <main className="flex-1 flex flex-col sm:ml-56 ml-0 transition-all duration-300" style={mainContentStyle}>
-        <div className="max-w-3xl w-full py-10 px-4 main-content">
+        <div className="max-w-3xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl w-full py-10 px-4 mx-auto main-content">
           {/* Always show menu page unless on shopping_items */}
           {activeNav === 'menu' && (
             <section id="menu">
@@ -1201,7 +1201,7 @@ function App() {
           )}
           {activeNav === 'shopping_items' && (
             <section id="shopping-items" className="w-full">
-              <div className="w-full max-w-4xl">
+              <div className="w-full max-w-4xl md:max-w-6xl lg:max-w-7xl xl:max-w-[1400px] mx-auto">
                 <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Shopping Items</h2>
                 {/* Filters */}
                 <div className="flex flex-wrap gap-4 mb-4 items-end">
@@ -1343,7 +1343,7 @@ function App() {
               {loading && <div className="text-[#00D4AA]">Loading runbook...</div>}
               {error && <div className="text-red-400">{error}</div>}
               {!loading && !error && (
-                <div className="w-full max-w-4xl">
+                <div className="w-full max-w-4xl md:max-w-6xl lg:max-w-7xl xl:max-w-[1400px] mx-auto">
                   <div className="overflow-x-auto rounded-[12px] bg-[#2a2a2a] p-4 shadow">
                     <table className="min-w-full text-sm">
                       <colgroup>
@@ -1449,8 +1449,8 @@ function App() {
 
       {/* Recipes Page - Full Width */}
       {activeNav === 'recipes' && (
-        <section id="recipes" className="w-full py-10 px-4" style={{marginRight: '400px'}}>
-          <div className="w-full">
+        <section id="recipes" className="w-full py-10 px-4" style={{marginRight: selectedRecipe ? '400px' : '0px', transition: 'margin-right 0.3s'}}>
+          <div className="w-full max-w-3xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto">
             <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Recipes</h2>
             
             {/* Recipe Filters */}
@@ -1518,7 +1518,7 @@ function App() {
       {/* Shopping List Page - Full Width */}
       {activeNav === 'shopping_list' && (
         <section id="shopping-list" className="w-full py-10 px-4">
-          <div className="w-full">
+          <div className="w-full max-w-6xl lg:max-w-7xl xl:max-w-[1600px] mx-auto">
             <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Shopping List</h2>
             
             {cart.length === 0 ? (
