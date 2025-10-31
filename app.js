@@ -863,19 +863,10 @@ function App() {
         </div>
         <div 
           className="mx-4 mb-4 p-3 bg-[#2a2a2a] rounded-[12px] shadow flex flex-col items-start cursor-pointer hover:bg-[#232946] transition" 
-          onClick={() => {
-            if (activeNav === 'menu' && !showShoppingCart) {
-              setShowShoppingCart(true);
-            } else {
-              handleNavClick('cart');
-            }
-          }}
+          onClick={() => handleNavClick('cart')}
         >
           <div className="font-semibold text-[#00D4AA] mb-1">Cart</div>
           <div className="text-sm">{cart.length} item{cart.length !== 1 ? 's' : ''} selected</div>
-          {activeNav === 'menu' && !showShoppingCart && (
-            <div className="text-xs text-[#00D4AA] mt-1">Click to show</div>
-          )}
         </div>
         <nav className="flex-1 flex flex-col gap-2 px-4">
           {NAV_OPTIONS.map(opt => (
@@ -1716,6 +1707,25 @@ function App() {
           </div>
         </section>
       )}
+      {/* Shopping Cart Expand Button (when minimized) */}
+      {activeNav === 'menu' && !showShoppingCart && (
+        <button
+          onClick={() => setShowShoppingCart(true)}
+          className="fixed top-4 right-4 z-50 bg-[#00D4AA] hover:bg-[#00B894] text-white p-3 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center group"
+          title="Show Shopping Cart"
+          style={{boxShadow: '0 4px 20px 0 #00D4AA66'}}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:scale-110 transition-transform">
+            <path d="M9 18l6-6-6-6"></path>
+          </svg>
+          {cart.length > 0 && (
+            <span className="absolute -top-1 -right-1 bg-[#9945FF] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              {cart.length}
+            </span>
+          )}
+        </button>
+      )}
+
       {/* Shopping Cart (right) - only on menu page */}
       <aside className={`shopping-cart fixed top-0 right-0 h-full w-[300px] xl:w-[400px] bg-[#2a2a2a] shadow-2xl z-40 p-6 flex flex-col gap-4 rounded-l-[18px] border-l border-[#00D4AA] animate-float-cart transition-all duration-300 ${(activeNav === 'menu' && showShoppingCart) ? '' : 'hidden'}`} style={{boxShadow: '0 8px 32px 0 #00D4AA55'}}>
         <div className="flex items-center justify-between mb-2">
