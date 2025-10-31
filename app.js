@@ -1650,31 +1650,31 @@ function App() {
 
                   {/* Already Have Table */}
                   <div>
-                    <h3 className="text-lg font-semibold mb-4 text-[#9945FF]">Already Have</h3>
+                    <h3 className="text-lg font-semibold mb-4 text-[#A78BFA]">Already Have</h3>
                     <div className="overflow-x-auto rounded-[12px] bg-[#2a2a2a] shadow">
                       <table className="min-w-full text-sm">
                         <thead>
                           <tr className="border-b border-[#3a3a3a]">
                             <th 
-                              className="px-4 py-3 text-left text-[#9945FF] font-bold cursor-pointer select-none hover:bg-[#3a3a3a] transition"
+                              className="px-4 py-3 text-left text-[#A78BFA] font-bold cursor-pointer select-none hover:bg-[#3a3a3a] transition"
                               onClick={() => setShoppingListSort(s => s.key === 'store' ? { key: 'store', dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key: 'store', dir: 'asc' })}
                             >
                               Store {shoppingListSort.key === 'store' && (shoppingListSort.dir === 'asc' ? ' ▲' : ' ▼')}
                             </th>
                             <th 
-                              className="px-4 py-3 text-left text-[#9945FF] font-bold cursor-pointer select-none hover:bg-[#3a3a3a] transition"
+                              className="px-4 py-3 text-left text-[#A78BFA] font-bold cursor-pointer select-none hover:bg-[#3a3a3a] transition"
                               onClick={() => setShoppingListSort(s => s.key === 'category' ? { key: 'category', dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key: 'category', dir: 'asc' })}
                             >
                               Category {shoppingListSort.key === 'category' && (shoppingListSort.dir === 'asc' ? ' ▲' : ' ▼')}
                             </th>
                             <th 
-                              className="px-4 py-3 text-left text-[#9945FF] font-bold cursor-pointer select-none hover:bg-[#3a3a3a] transition"
+                              className="px-4 py-3 text-left text-[#A78BFA] font-bold cursor-pointer select-none hover:bg-[#3a3a3a] transition"
                               onClick={() => setShoppingListSort(s => s.key === 'name' ? { key: 'name', dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key: 'name', dir: 'asc' })}
                             >
                               Name {shoppingListSort.key === 'name' && (shoppingListSort.dir === 'asc' ? ' ▲' : ' ▼')}
                             </th>
-                            <th className="px-2 py-3 text-left text-[#9945FF] font-bold text-xs">Qty</th>
-                            <th className="px-4 py-3 text-left text-[#9945FF] font-bold">Action</th>
+                            <th className="px-2 py-3 text-left text-[#A78BFA] font-bold text-xs">Qty</th>
+                            <th className="px-4 py-3 text-left text-[#A78BFA] font-bold">Action</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1686,7 +1686,7 @@ function App() {
                               <td className="px-2 py-3 text-white text-xs">{ing.totalQty || ing.quantity || '1'}</td>
                               <td className="px-4 py-3">
                                 <button
-                                  className="bg-[#9945FF] text-white px-3 py-1 rounded hover:bg-[#7c3aed] transition"
+                                  className="bg-[#A78BFA] text-white px-3 py-1 rounded hover:bg-[#8B5CF6] transition"
                                   onClick={() => unmarkAsAlreadyHave(ing)}
                                 >
                                   Need to buy
