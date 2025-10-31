@@ -1730,10 +1730,13 @@ function App() {
             </button>
             <button
               onClick={() => setShowShoppingCart(false)}
-              className="text-[#b0b8c1] hover:text-white transition text-2xl font-bold leading-none p-1 hover:bg-[#3a3a3a] rounded"
+              className="text-[#b0b8c1] hover:text-white transition p-1 hover:bg-[#3a3a3a] rounded flex items-center justify-center"
               title="Minimize Shopping Cart"
             >
-              ×
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
             </button>
           </div>
         </div>
