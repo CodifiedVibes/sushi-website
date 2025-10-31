@@ -314,6 +314,7 @@ function App() {
   const [selectedRunbookItem, setSelectedRunbookItem] = useState(null); // Selected item for tips panel
   const [runbookDefaultSet, setRunbookDefaultSet] = useState(false); // Track if default runbook item has been set
   const [menuFilter, setMenuFilter] = useState('all'); // all, top-ranked, salmon, tuna, veggie
+  const [showShoppingCart, setShowShoppingCart] = useState(true); // Control shopping cart panel visibility
 
   useEffect(() => {
     console.log('Starting data fetch...');
@@ -468,11 +469,15 @@ function App() {
   const handleNavClick = (key) => {
     setActiveNav(key);
     setNavOpen(false);
+    // Show cart again when navigating to menu page
+    if (key === 'menu') {
+      setShowShoppingCart(true);
+    }
   };
 
   // Main content margin for cart, tips panel, and recipe modal
   const mainContentStyle = {
-    marginRight: (activeNav === 'menu') ? '320px' : 
+    marginRight: (activeNav === 'menu' && showShoppingCart) ? '320px' : 
                  (activeNav === 'runbook') ? '400px' :
                  (activeNav === 'recipes' && selectedRecipe) ? '400px' : '0px',
     transition: 'margin-right 0.3s',
@@ -856,9 +861,21 @@ function App() {
           <span className="text-2xl font-bold tracking-tight text-[#00D4AA]" style={{letterSpacing: '0.05em'}}>CASSaROLL</span>
           <button className="sm:hidden text-2xl text-[#00D4AA] focus:outline-none" onClick={() => setNavOpen(false)}>&times;</button>
         </div>
-        <div className="mx-4 mb-4 p-3 bg-[#2a2a2a] rounded-[12px] shadow flex flex-col items-start cursor-pointer hover:bg-[#232946] transition" onClick={() => handleNavClick('cart')}>
+        <div 
+          className="mx-4 mb-4 p-3 bg-[#2a2a2a] rounded-[12px] shadow flex flex-col items-start cursor-pointer hover:bg-[#232946] transition" 
+          onClick={() => {
+            if (activeNav === 'menu' && !showShoppingCart) {
+              setShowShoppingCart(true);
+            } else {
+              handleNavClick('cart');
+            }
+          }}
+        >
           <div className="font-semibold text-[#00D4AA] mb-1">Cart</div>
           <div className="text-sm">{cart.length} item{cart.length !== 1 ? 's' : ''} selected</div>
+          {activeNav === 'menu' && !showShoppingCart && (
+            <div className="text-xs text-[#00D4AA] mt-1">Click to show</div>
+          )}
         </div>
         <nav className="flex-1 flex flex-col gap-2 px-4">
           {NAV_OPTIONS.map(opt => (
@@ -1700,16 +1717,25 @@ function App() {
         </section>
       )}
       {/* Shopping Cart (right) - only on menu page */}
-      <aside className={`shopping-cart fixed top-0 right-0 h-full w-[300px] xl:w-[400px] bg-[#2a2a2a] shadow-2xl z-40 p-6 flex flex-col gap-4 rounded-l-[18px] border-l border-[#00D4AA] animate-float-cart transition-all duration-300 ${(activeNav === 'menu') ? '' : 'hidden'}`} style={{boxShadow: '0 8px 32px 0 #00D4AA55'}}>
+      <aside className={`shopping-cart fixed top-0 right-0 h-full w-[300px] xl:w-[400px] bg-[#2a2a2a] shadow-2xl z-40 p-6 flex flex-col gap-4 rounded-l-[18px] border-l border-[#00D4AA] animate-float-cart transition-all duration-300 ${(activeNav === 'menu' && showShoppingCart) ? '' : 'hidden'}`} style={{boxShadow: '0 8px 32px 0 #00D4AA55'}}>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl font-bold text-[#00D4AA]">Shopping Cart</h2>
-          <button
-            onClick={() => setShowCreateEventMenu(true)}
-            className="bg-[#00D4AA] hover:bg-[#00B894] text-white px-3 py-1 rounded-[8px] text-sm font-semibold transition-colors"
-            title="Create Event Menu"
-          >
-            📅 Event
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowCreateEventMenu(true)}
+              className="bg-[#00D4AA] hover:bg-[#00B894] text-white px-3 py-1 rounded-[8px] text-sm font-semibold transition-colors"
+              title="Create Event Menu"
+            >
+              📅 Event
+            </button>
+            <button
+              onClick={() => setShowShoppingCart(false)}
+              className="text-[#b0b8c1] hover:text-white transition text-xl font-bold leading-none"
+              title="Minimize Shopping Cart"
+            >
+              ✕
+            </button>
+          </div>
         </div>
         
         {/* Top: Menu item summary */}
