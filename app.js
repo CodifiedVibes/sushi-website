@@ -1730,10 +1730,10 @@ function App() {
             </button>
             <button
               onClick={() => setShowShoppingCart(false)}
-              className="text-[#b0b8c1] hover:text-white transition text-xl font-bold leading-none"
+              className="text-[#b0b8c1] hover:text-white transition text-2xl font-bold leading-none p-1 hover:bg-[#3a3a3a] rounded"
               title="Minimize Shopping Cart"
             >
-              ✕
+              ×
             </button>
           </div>
         </div>
