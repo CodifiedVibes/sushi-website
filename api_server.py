@@ -958,7 +958,7 @@ def debug_db_info():
             
             cursor.execute("SELECT activity, notes FROM runbook_items WHERE activity = 'Order Fish' LIMIT 1")
             row = cursor.fetchone()
-            notes_preview = row['notes'][:100] if row and row.get('notes') else 'not found'
+            notes_preview = row[1][:100] if row and len(row) > 1 and row[1] else 'not found'
         
         conn.close()
         
