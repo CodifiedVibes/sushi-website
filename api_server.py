@@ -905,6 +905,79 @@ def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
 
+@app.route('/api/debug-db-info', methods=['GET'])
+def debug_db_info():
+    """Debug endpoint to see what database Railway is using"""
+    database_url = os.getenv('DATABASE_URL', 'NOT SET')
+    
+    # Mask password for security
+    if database_url != 'NOT SET' and '@' in database_url:
+        parts = database_url.split('@')
+        if len(parts) == 2:
+            user_pass = parts[0].split('://')[-1]
+            if ':' in user_pass:
+                user = user_pass.split(':')[0]
+                masked_url = database_url.replace(user_pass, f"{user}:***")
+            else:
+                masked_url = database_url
+        else:
+            masked_url = database_url
+    else:
+        masked_url = database_url
+    
+    try:
+        conn = get_db_connection()
+        is_postgres = database_url != 'NOT SET' and database_url.startswith('postgres')
+        cursor = conn.cursor()
+        
+        # Get database name and connection info
+        if is_postgres:
+            cursor.execute("SELECT current_database(), inet_server_addr(), inet_server_port()")
+            db_info = cursor.fetchone()
+            database_name = db_info[0] if db_info else 'unknown'
+            server_addr = db_info[1] if db_info and len(db_info) > 1 else 'unknown'
+            server_port = db_info[2] if db_info and len(db_info) > 2 else 'unknown'
+            
+            # Check runbook count and sample
+            cursor.execute("SELECT COUNT(*) as count FROM runbook_items")
+            count = cursor.fetchone()['count']
+            
+            cursor.execute("SELECT activity, notes FROM runbook_items WHERE activity = 'Order Fish' LIMIT 1")
+            order_fish = cursor.fetchone()
+            notes_preview = order_fish['notes'][:100] if order_fish and order_fish.get('notes') else 'not found'
+            
+        else:
+            # SQLite
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='runbook_items'")
+            database_name = 'SQLite'
+            server_addr = 'local'
+            server_port = 'N/A'
+            
+            cursor.execute("SELECT COUNT(*) FROM runbook_items")
+            count = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT activity, notes FROM runbook_items WHERE activity = 'Order Fish' LIMIT 1")
+            row = cursor.fetchone()
+            notes_preview = row['notes'][:100] if row and row.get('notes') else 'not found'
+        
+        conn.close()
+        
+        return jsonify({
+            'database_url_masked': masked_url,
+            'database_type': 'PostgreSQL' if is_postgres else 'SQLite',
+            'database_name': database_name,
+            'server_address': server_addr,
+            'server_port': server_port,
+            'runbook_items_count': count,
+            'order_fish_notes_preview': notes_preview,
+            'has_yamaseafood_text': 'Yamaseafood.com' in notes_preview if notes_preview else False
+        })
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'database_url_masked': masked_url
+        })
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
     print("Starting Sushi Restaurant API Server...")
