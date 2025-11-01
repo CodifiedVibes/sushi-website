@@ -502,11 +502,13 @@ function App() {
 
   // Event Menus state
   const [eventMenus, setEventMenus] = useState([]);
+  const [eventMenusLoading, setEventMenusLoading] = useState(false);
   const [selectedEventMenu, setSelectedEventMenu] = useState(null);
   const [showCreateEventMenu, setShowCreateEventMenu] = useState(false);
   const [eventMenuName, setEventMenuName] = useState('');
   const [eventMenuDescription, setEventMenuDescription] = useState('');
   const [eventMenuHostName, setEventMenuHostName] = useState('');
+  const [eventMenuViewMode, setEventMenuViewMode] = useState('grid'); // 'grid' or 'list'
 
   // Event Menu API functions
   const createEventMenu = async (name, description, menuData, hostName = '') => {
@@ -615,6 +617,25 @@ function App() {
       throw error;
     }
   };
+
+  // Load event menus when on cart page
+  useEffect(() => {
+    if (activeNav === 'cart') {
+      const loadMenus = async () => {
+        setEventMenusLoading(true);
+        try {
+          const menus = await listEventMenus();
+          setEventMenus(menus || []);
+        } catch (error) {
+          console.error('Failed to load event menus:', error);
+          setEventMenus([]);
+        } finally {
+          setEventMenusLoading(false);
+        }
+      };
+      loadMenus();
+    }
+  }, [activeNav]);
 
   // Recipes state
   const [selectedRecipe, setSelectedRecipe] = useState(null);
@@ -1258,77 +1279,151 @@ function App() {
           )}
           {activeNav === 'cart' && (
             <section id="cart" className="w-full">
-              <h2 className="text-2xl font-semibold mb-6 text-[#00D4AA]">Shopping Cart</h2>
-              {cart.length === 0 ? (
-                <div className="text-[#b0b8c1]">Your cart is empty.</div>
-              ) : (
-                <div className="space-y-4">
-                  <table className="min-w-full text-sm bg-[#2a2a2a] rounded-[12px] shadow">
-                    <thead>
-                      <tr>
-                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Category</th>
-                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Item</th>
-                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Description</th>
-                        <th className="px-4 py-2 text-left text-[#00D4AA] font-bold">Quantity</th>
-                        <th className="px-4 py-2"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(() => {
-                        // Group cart items by category, sort each group alphabetically, then flatten
-                        const groupedByCategory = {};
-                        cart.forEach(item => {
-                          if (!groupedByCategory[item.category]) {
-                            groupedByCategory[item.category] = [];
-                          }
-                          groupedByCategory[item.category].push(item);
-                        });
-                        
-                        // Sort each category group alphabetically by name
-                        Object.keys(groupedByCategory).forEach(category => {
-                          groupedByCategory[category].sort((a, b) => a.name.localeCompare(b.name));
-                        });
-                        
-                        // Flatten back to single array, maintaining category order
-                        const sortedCart = [];
-                        const categoryOrder = ['Appetizer', 'Nigiri', 'Maki Rolls', 'Speciality Rolls'];
-                        categoryOrder.forEach(category => {
-                          if (groupedByCategory[category]) {
-                            sortedCart.push(...groupedByCategory[category]);
-                          }
-                        });
-                        
-                        return sortedCart.map((item, idx) => {
-                          const categoryColors = {
-                            'Appetizer': '#FF69B4',
-                            'Nigiri': '#9945FF',
-                            'Maki Rolls': '#3B82F6',
-                            'Speciality Rolls': '#00D4AA'
-                          };
-                          const categoryColor = categoryColors[item.category] || '#b0b8c1';
-                          return (
-                            <tr key={idx} className="border-b border-[#1a1a1a]">
-                              <td className="px-4 py-2 font-semibold" style={{ color: categoryColor }}>{item.category}</td>
-                              <td className="px-4 py-2 font-semibold text-white">{item.name}</td>
-                              <td className="px-4 py-2 text-[#b0b8c1]">{item.description || 'No description available'}</td>
-                              <td className="px-4 py-2 text-white">{item.quantity}</td>
-                              <td className="px-4 py-2">
-                                <button className="text-xs text-[#b0b8c1] hover:text-red-400" onClick={() => removeFromCart(item)}>Remove</button>
-                              </td>
-                            </tr>
-                          );
-                        });
-                      })()}
-                    </tbody>
-                  </table>
-                  <div className="flex justify-end items-center mt-4">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-semibold text-[#00D4AA]">Event Menus</h2>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-[#2a2a2a] rounded-[8px] p-1">
                     <button
-                      className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[12px] font-semibold shadow hover:bg-[#1a1a1a] hover:text-[#00D4AA] border border-[#00D4AA] transition"
-                      onClick={() => window.print()}
+                      onClick={() => setEventMenuViewMode('grid')}
+                      className={`px-3 py-1 rounded-[6px] text-sm transition ${eventMenuViewMode === 'grid' ? 'bg-[#00D4AA] text-[#1a1a1a]' : 'text-[#b0b8c1] hover:text-white'}`}
+                      title="Grid View"
                     >
-                      Print / Export
+                      ▦ Grid
+                    </button>
+                    <button
+                      onClick={() => setEventMenuViewMode('list')}
+                      className={`px-3 py-1 rounded-[6px] text-sm transition ${eventMenuViewMode === 'list' ? 'bg-[#00D4AA] text-[#1a1a1a]' : 'text-[#b0b8c1] hover:text-white'}`}
+                      title="List View"
+                    >
+                      ☰ List
                     </button>
                   </div>
+                </div>
+              </div>
+
+              {/* Stats Section */}
+              {eventMenus.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-[#2a2a2a] rounded-[12px] p-4 border border-[#3a3a3a]">
+                    <div className="text-sm text-[#b0b8c1] mb-1">Total Menus</div>
+                    <div className="text-2xl font-bold text-[#00D4AA]">{eventMenus.length}</div>
+                  </div>
+                  <div className="bg-[#2a2a2a] rounded-[12px] p-4 border border-[#3a3a3a]">
+                    <div className="text-sm text-[#b0b8c1] mb-1">Total Items</div>
+                    <div className="text-2xl font-bold text-[#00D4AA]">
+                      {eventMenus.reduce((total, menu) => {
+                        const menuData = typeof menu.menu_data === 'string' ? JSON.parse(menu.menu_data) : menu.menu_data;
+                        return total + (menuData?.length || 0);
+                      }, 0)}
+                    </div>
+                  </div>
+                  <div className="bg-[#2a2a2a] rounded-[12px] p-4 border border-[#3a3a3a]">
+                    <div className="text-sm text-[#b0b8c1] mb-1">Current Cart</div>
+                    <div className="text-2xl font-bold text-[#00D4AA]">{cart.length}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {eventMenusLoading && (
+                <div className="text-center py-12">
+                  <div className="text-[#00D4AA]">Loading event menus...</div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!eventMenusLoading && eventMenus.length === 0 && (
+                <div className="text-center py-12 bg-[#2a2a2a] rounded-[12px] border border-[#3a3a3a]">
+                  <div className="text-[#b0b8c1] text-lg mb-2">No event menus yet</div>
+                  <div className="text-sm text-[#b0b8c1] mb-4">Create your first event menu from the shopping cart</div>
+                  {cart.length > 0 && (
+                    <button
+                      onClick={() => {
+                        setShowCreateEventMenu(true);
+                        handleNavClick('menu');
+                      }}
+                      className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[8px] font-semibold hover:bg-[#00B894] transition"
+                    >
+                      Create Event Menu
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Event Menus Grid/List */}
+              {!eventMenusLoading && eventMenus.length > 0 && (
+                <div className={eventMenuViewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-4'}>
+                  {eventMenus.map((menu) => {
+                    const menuData = typeof menu.menu_data === 'string' ? JSON.parse(menu.menu_data) : menu.menu_data;
+                    const itemCount = menuData?.length || 0;
+                    const shareUrl = `${window.location.origin}/event/${menu.unique_id}`;
+                    
+                    return (
+                      <div key={menu.unique_id || menu.id} className="bg-[#2a2a2a] rounded-[12px] p-4 border border-[#3a3a3a] hover:border-[#00D4AA] transition">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-white mb-1">{menu.name}</h3>
+                            {menu.host_name && (
+                              <div className="text-sm text-[#b0b8c1] mb-2">Host: {menu.host_name}</div>
+                            )}
+                            {menu.description && (
+                              <div className="text-sm text-[#b0b8c1] mb-2">{menu.description}</div>
+                            )}
+                            <div className="flex items-center gap-4 text-xs text-[#b0b8c1]">
+                              <span>{itemCount} item{itemCount !== 1 ? 's' : ''}</span>
+                              {menu.created_at && (
+                                <span>{new Date(menu.created_at).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          <button
+                            onClick={async () => {
+                              // Load menu into cart
+                              const fullMenu = await getEventMenu(menu.unique_id);
+                              setCart(fullMenu.menu_data || []);
+                              setCurrentEventId(menu.unique_id);
+                              setSelectedEventMenu(fullMenu);
+                              handleNavClick('menu');
+                              setShowShoppingCart(true);
+                            }}
+                            className="flex-1 bg-[#00D4AA] text-[#1a1a1a] px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#00B894] transition"
+                            title="Load into cart"
+                          >
+                            Load
+                          </button>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(shareUrl);
+                              alert('Share link copied to clipboard!');
+                            }}
+                            className="flex-1 bg-[#3a3a3a] text-white px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#4a4a4a] transition"
+                            title="Copy share link"
+                          >
+                            Share
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (confirm(`Delete "${menu.name}"? This cannot be undone.`)) {
+                                try {
+                                  await deleteEventMenu(menu.unique_id);
+                                  setEventMenus(eventMenus.filter(m => m.unique_id !== menu.unique_id));
+                                } catch (error) {
+                                  alert('Failed to delete event menu');
+                                }
+                              }
+                            }}
+                            className="bg-[#dc2626] text-white px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#b91c1c] transition"
+                            title="Delete menu"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </section>
@@ -2099,6 +2194,12 @@ function App() {
                         cart,
                         eventMenuHostName.trim()
                       );
+                      
+                      // Refresh event menus list if on cart page
+                      if (activeNav === 'cart') {
+                        const menus = await listEventMenus();
+                        setEventMenus(menus || []);
+                      }
                       
                       const shareUrl = `${window.location.origin}/event/${result.unique_id}`;
                       
