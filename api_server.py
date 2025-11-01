@@ -883,16 +883,56 @@ def migrate_readonly_endpoint():
 def list_event_menus():
     """List all non-expired event menus (for admin/debug purposes)"""
     conn = get_db_connection()
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
     
     try:
-        cursor = conn.execute("""
-            SELECT id, unique_id, name, description, created_at, expires_at
-            FROM event_menus 
-            WHERE expires_at > datetime('now')
-            ORDER BY created_at DESC
-        """)
+        if is_postgres:
+            # PostgreSQL - need to handle datetime differently and use RealDictCursor
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, unique_id, name, description, menu_data, host_name, created_at, expires_at
+                FROM event_menus 
+                WHERE expires_at > NOW()
+                ORDER BY created_at DESC
+            """)
+            rows = cursor.fetchall()
+            event_menus = []
+            for row in rows:
+                menu = {
+                    'id': row[0],
+                    'unique_id': row[1],
+                    'name': row[2],
+                    'description': row[3],
+                    'menu_data': row[4],  # Already JSON string or could be JSONB
+                    'host_name': row[5],
+                    'created_at': row[6].isoformat() if row[6] else None,
+                    'expires_at': row[7].isoformat() if row[7] else None
+                }
+                event_menus.append(menu)
+        else:
+            # SQLite
+            cursor = conn.execute("""
+                SELECT id, unique_id, name, description, menu_data, host_name, created_at, expires_at
+                FROM event_menus 
+                WHERE expires_at > datetime('now')
+                ORDER BY created_at DESC
+            """)
+            
+            event_menus = []
+            for row in cursor.fetchall():
+                menu = {
+                    'id': row[0],
+                    'unique_id': row[1],
+                    'name': row[2],
+                    'description': row[3],
+                    'menu_data': row[4],  # JSON string
+                    'host_name': row[5],
+                    'created_at': row[6],
+                    'expires_at': row[7]
+                }
+                event_menus.append(menu)
         
-        event_menus = [dict(row) for row in cursor.fetchall()]
         return jsonify(event_menus)
         
     except Exception as e:
