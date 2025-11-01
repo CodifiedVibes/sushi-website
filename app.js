@@ -312,10 +312,9 @@ function App() {
   const [selectedCategories, setSelectedCategories] = useState(new Set()); // Track selected category filters
   const [runbookFilter, setRunbookFilter] = useState('beginner'); // 'beginner' or 'advanced'
   const [selectedRunbookItem, setSelectedRunbookItem] = useState(null); // Selected item for tips panel
-  const [runbookDefaultSet, setRunbookDefaultSet] = useState(false); // Track if default runbook item has been set
   const [menuFilter, setMenuFilter] = useState('all'); // all, top-ranked, salmon, tuna, veggie
-  const [showShoppingCart, setShowShoppingCart] = useState(true); // Control shopping cart panel visibility
-  const [showTipsPanel, setShowTipsPanel] = useState(true); // Control tips panel visibility
+  const [showShoppingCart, setShowShoppingCart] = useState(false); // Control shopping cart panel visibility
+  const [showTipsPanel, setShowTipsPanel] = useState(false); // Control tips panel visibility
 
   useEffect(() => {
     console.log('Starting data fetch...');
@@ -368,17 +367,7 @@ function App() {
     return () => clearTimeout(fallbackTimer);
   }, []);
 
-  // Set default runbook item to "Order Fish" when runbook data is loaded
-  useEffect(() => {
-    if (runbook.length > 0 && !runbookDefaultSet) {
-      const orderFishItem = runbook.find(item => item.activity === 'Order Fish');
-      if (orderFishItem) {
-        setSelectedRunbookItem(orderFishItem);
-        setShowTipsPanel(true); // Show panel when default item is set
-        setRunbookDefaultSet(true);
-      }
-    }
-  }, [runbook, runbookDefaultSet]);
+  // Removed default runbook item selection - panels now only open when user selects an item
 
   const toggleCategory = (cat) => {
     setOpenCategories((prev) => ({ ...prev, [cat]: !prev[cat] }));
@@ -425,6 +414,8 @@ function App() {
         return [...prev, { ...item, quantity: 1 }];
       }
     });
+    // Show cart panel when item is added (like recipes page behavior)
+    setShowShoppingCart(true);
   };
   const removeFromCart = (item) => {
     setCart(prev => prev.filter(i => !(i.name === item.name && i.category === item.category)));
@@ -471,13 +462,12 @@ function App() {
   const handleNavClick = (key) => {
     setActiveNav(key);
     setNavOpen(false);
-    // Show cart again when navigating to menu page
-    if (key === 'menu') {
-      setShowShoppingCart(true);
+    // Hide panels when navigating away (like recipes page behavior)
+    if (key !== 'menu') {
+      setShowShoppingCart(false);
     }
-    // Show tips panel again when navigating to runbook page
-    if (key === 'runbook') {
-      setShowTipsPanel(true);
+    if (key !== 'runbook') {
+      setShowTipsPanel(false);
     }
   };
 
