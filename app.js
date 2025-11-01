@@ -482,8 +482,9 @@ function App() {
   };
 
   // Main content margin for cart, tips panel, and recipe modal
+  // Note: Cart is w-[300px] xl:w-[400px], so margin needs to match
   const mainContentStyle = {
-    marginRight: (activeNav === 'menu' && showShoppingCart) ? '320px' : 
+    marginRight: (activeNav === 'menu' && showShoppingCart) ? '300px' : 
                  (activeNav === 'runbook' && showTipsPanel) ? '400px' :
                  (activeNav === 'recipes' && selectedRecipe) ? '400px' : '0px',
     transition: 'margin-right 0.3s',
@@ -894,7 +895,7 @@ function App() {
       >
         <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><rect y="4" width="24" height="2" rx="1" fill="#00D4AA"/><rect y="11" width="24" height="2" rx="1" fill="#00D4AA"/><rect y="18" width="24" height="2" rx="1" fill="#00D4AA"/></svg>
       </button>
-      <main className="flex-1 flex flex-col sm:ml-56 ml-0 transition-all duration-300" style={mainContentStyle}>
+      <main className={`flex-1 flex flex-col sm:ml-56 ml-0 transition-all duration-300 ${(activeNav === 'menu' && showShoppingCart) ? 'menu-with-cart' : ''}`} style={mainContentStyle}>
         <div className="max-w-3xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl w-full py-10 px-4 mx-auto main-content">
           {/* Always show menu page unless on shopping_items */}
           {activeNav === 'menu' && (
@@ -2162,6 +2163,11 @@ function App() {
       <style>{`
         .main-content {
           transition: margin-right 0.3s;
+        }
+        @media (min-width: 1280px) {
+          .menu-with-cart {
+            margin-right: 400px !important;
+          }
         }
         .solana-gradient-border {
           border-right: 2px solid;
