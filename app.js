@@ -860,7 +860,14 @@ function App() {
         </div>
         <div 
           className="mx-4 mb-4 p-3 bg-[#2a2a2a] rounded-[12px] shadow flex flex-col items-start cursor-pointer hover:bg-[#232946] transition" 
-          onClick={() => handleNavClick('cart')}
+          onClick={() => {
+            if (activeNav === 'menu' && cart.length > 0) {
+              // If on menu page and cart has items, show the cart panel instead of navigating
+              setShowShoppingCart(true);
+            } else {
+              handleNavClick('cart');
+            }
+          }}
         >
           <div className="font-semibold text-[#00D4AA] mb-1">Cart</div>
           <div className="text-sm">{cart.length} item{cart.length !== 1 ? 's' : ''} selected</div>
