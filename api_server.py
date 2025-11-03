@@ -795,7 +795,8 @@ def get_event_menu(unique_id):
         else:
             # SQLite
             cursor = conn.execute("""
-                SELECT * FROM event_menus 
+                SELECT id, unique_id, name, description, menu_data, read_only, host_name, created_at, expires_at, created_by
+                FROM event_menus 
                 WHERE unique_id = ? AND expires_at > datetime('now')
             """, (unique_id,))
             
@@ -803,8 +804,19 @@ def get_event_menu(unique_id):
             if not row:
                 return jsonify({'error': 'Event menu not found or expired'}), 404
             
-            event_menu = dict(row)
-            event_menu['menu_data'] = json.loads(event_menu['menu_data'])
+            # Map SQLite row to dict
+            event_menu = {
+                'id': row[0],
+                'unique_id': row[1],
+                'name': row[2],
+                'description': row[3],
+                'menu_data': json.loads(row[4]) if isinstance(row[4], str) else row[4],
+                'read_only': row[5] if len(row) > 5 else False,
+                'host_name': row[6] if len(row) > 6 else None,
+                'created_at': row[7] if len(row) > 7 else None,
+                'expires_at': row[8] if len(row) > 8 else None,
+                'created_by': row[9] if len(row) > 9 else None
+            }
         
         return jsonify(event_menu)
         
@@ -988,9 +1000,30 @@ def list_event_menus():
         
         if user:
             if filter_my_events or user.get('role') != 'admin':
-                # Filter to user's events only
-                where_clauses.append("created_by = " + ("%s" if is_postgres else "?"))
-                params.append(user['id'])
+                # Filter to user's events only (only if created_by column exists)
+                # Check if created_by column exists first
+                has_created_by = False
+                if is_postgres:
+                    cursor_check = conn.cursor()
+                    cursor_check.execute("""
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'event_menus' AND column_name = 'created_by'
+                    """)
+                    has_created_by = cursor_check.fetchone() is not None
+                else:
+                    cursor_check = conn.execute("PRAGMA table_info(event_menus)")
+                    columns = cursor_check.fetchall()
+                    col_names = [col[1] for col in columns]
+                    has_created_by = 'created_by' in col_names
+                
+                if has_created_by:
+                    where_clauses.append("created_by = " + ("%s" if is_postgres else "?"))
+                    params.append(user['id'])
+                else:
+                    # If created_by column doesn't exist, return empty for security
+                    # (we don't want to show events created before auth was added)
+                    return jsonify([])
             # Admin sees all if not filtering
         else:
             # Not logged in - return empty (or could return public events)
@@ -1022,6 +1055,7 @@ def list_event_menus():
                 }
                 event_menus.append(menu)
         else:
+            # SQLite - need to check column count
             cursor = conn.execute(f"""
                 SELECT id, unique_id, name, description, menu_data, host_name, created_at, expires_at, created_by
                 FROM event_menus 
@@ -1031,12 +1065,20 @@ def list_event_menus():
             
             event_menus = []
             for row in cursor.fetchall():
+                # Parse menu_data if it's a string
+                menu_data = row[4]
+                if isinstance(menu_data, str):
+                    try:
+                        menu_data = json.loads(menu_data)
+                    except:
+                        pass
+                
                 menu = {
                     'id': row[0],
                     'unique_id': row[1],
                     'name': row[2],
                     'description': row[3],
-                    'menu_data': row[4],  # JSON string
+                    'menu_data': menu_data,
                     'host_name': row[5],
                     'created_at': row[6],
                     'expires_at': row[7],
