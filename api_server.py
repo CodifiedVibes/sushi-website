@@ -1198,6 +1198,8 @@ def login():
         email = data.get('email', '').strip().lower()
         password = data.get('password', '').strip()
         
+        print(f"Login attempt for email: {email}, DB type: {'PostgreSQL' if is_postgres else 'SQLite'}")
+        
         # Find user
         if is_postgres:
             cursor = conn.cursor()
@@ -1208,6 +1210,7 @@ def login():
             row = cursor.fetchone()
         
         if not row:
+            print(f"User not found for email: {email}")
             return jsonify({'error': 'Invalid email or password'}), 401
         
         # Handle SQLite vs PostgreSQL row formats
@@ -1224,9 +1227,15 @@ def login():
                 'email_verified': row[5] if len(row) > 5 else False
             }
         
+        print(f"User found: {user['username']}, email_verified: {user.get('email_verified')}")
+        
         # Check password
-        if not check_password_hash(user['password_hash'], password):
+        password_valid = check_password_hash(user['password_hash'], password)
+        if not password_valid:
+            print(f"Password check failed for user: {user['username']}")
             return jsonify({'error': 'Invalid email or password'}), 401
+        
+        print(f"Login successful for user: {user['username']}")
         
         # Set session
         session['user_id'] = user['id']
