@@ -170,7 +170,11 @@ def require_admin(f):
 def send_verification_email(email, verification_token):
     """Send email verification link"""
     try:
-        verify_url = f"{os.getenv('BASE_URL', 'http://localhost:5001')}/api/verify-email/{verification_token}"
+        # Use frontend URL for verification link
+        base_url = os.getenv('BASE_URL', 'https://cassaroll.io')
+        if 'localhost' in base_url:
+            base_url = 'http://localhost:5001'
+        verify_url = f"{base_url}/verify-email/{verification_token}"
         msg = Message(
             'Verify your CASSaROLL account',
             recipients=[email],
@@ -666,109 +670,76 @@ def create_event_menu():
         event_description = sanitize_input(event_description)
         host_name = sanitize_input(host_name)
         
+        # Get current user (from @require_auth)
+        user = get_current_user()
+        user_id = user['id'] if user else None
+        
         # Generate unique ID
         unique_id = str(uuid.uuid4())[:8]  # Short ID for easy sharing
         
         # Set expiration to 30 days from now
         expires_at = datetime.now() + timedelta(days=30)
         
-        # Check if read_only column exists
+        # Check which columns exist
         cursor = conn.cursor()
         database_url = os.getenv('DATABASE_URL')
+        is_postgres = database_url and database_url.startswith('postgres')
         
-        if database_url:
-            # PostgreSQL syntax
+        has_readonly_column = False
+        has_hostname_column = False
+        has_created_by_column = False
+        
+        if is_postgres:
             cursor.execute("""
                 SELECT column_name 
                 FROM information_schema.columns 
-                WHERE table_name = 'event_menus' AND column_name = 'read_only'
+                WHERE table_name = 'event_menus' AND column_name IN ('read_only', 'host_name', 'created_by')
             """)
+            existing_cols = {row['column_name'] for row in cursor.fetchall()}
+            has_readonly_column = 'read_only' in existing_cols
+            has_hostname_column = 'host_name' in existing_cols
+            has_created_by_column = 'created_by' in existing_cols
         else:
-            # SQLite syntax
-            cursor.execute("""
-                PRAGMA table_info(event_menus)
-            """)
+            cursor.execute("PRAGMA table_info(event_menus)")
             columns = cursor.fetchall()
-            has_readonly_column = any(col[1] == 'read_only' for col in columns)
-            cursor = conn.cursor()  # Reset cursor for the insert
+            col_names = [col[1] for col in columns]
+            has_readonly_column = 'read_only' in col_names
+            has_hostname_column = 'host_name' in col_names
+            has_created_by_column = 'created_by' in col_names
         
-        if database_url:
-            has_readonly_column = cursor.fetchone() is not None
+        # Build INSERT statement based on available columns
+        cols = ['unique_id', 'name', 'description', 'menu_data']
+        vals = [unique_id, event_name, event_description, json.dumps(data['menu_data'])]
         
-        # Check if host_name column exists (Postgres vs SQLite)
-        if database_url:
-            cursor.execute("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'event_menus' AND column_name = 'host_name'
-            """)
-            has_hostname_column = cursor.fetchone() is not None
+        if has_readonly_column:
+            cols.append('read_only')
+            vals.append(data.get('read_only', False))
+        if has_hostname_column:
+            cols.append('host_name')
+            vals.append(host_name)
+        if has_created_by_column:
+            cols.append('created_by')
+            vals.append(user_id)
+        
+        cols.append('expires_at')
+        vals.append(expires_at)
+        
+        # Execute INSERT
+        if is_postgres:
+            placeholders = ', '.join(['%s'] * len(cols))
+            query = f"INSERT INTO event_menus ({', '.join(cols)}) VALUES ({placeholders}) RETURNING id"
+            cursor.execute(query, tuple(vals))
+            event_id = cursor.fetchone()['id']
         else:
-            cursor.execute("""
-                PRAGMA table_info(event_menus)
-            """)
-            columns = cursor.fetchall()
-            # SQLite PRAGMA table_info returns tuples/rows; index 1 is column name for default row factory
-            has_hostname_column = any(col[1] == 'host_name' for col in columns)
-            cursor = conn.cursor()  # Reset cursor for the insert
-        
-        if has_readonly_column and has_hostname_column:
-            # Use the new schema with both columns
-            cursor.execute("""
-                INSERT INTO event_menus (unique_id, name, description, menu_data, read_only, host_name, expires_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                unique_id,
-                event_name,
-                event_description,
-                json.dumps(data['menu_data']),
-                data.get('read_only', False),
-                host_name,
-                expires_at
-            ))
-        elif has_hostname_column:
-            # Use schema with host_name but no read_only
-            cursor.execute("""
-                INSERT INTO event_menus (unique_id, name, description, menu_data, host_name, expires_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (
-                unique_id,
-                event_name,
-                event_description,
-                json.dumps(data['menu_data']),
-                host_name,
-                expires_at
-            ))
-        elif has_readonly_column:
-            # Use schema with read_only but no host_name
-            cursor.execute("""
-                INSERT INTO event_menus (unique_id, name, description, menu_data, read_only, expires_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (
-                unique_id,
-                event_name,
-                event_description,
-                json.dumps(data['menu_data']),
-                data.get('read_only', False),
-                expires_at
-            ))
-        else:
-            # Use the old schema without either column
-            cursor.execute("""
-                INSERT INTO event_menus (unique_id, name, description, menu_data, expires_at)
-                VALUES (?, ?, ?, ?, ?)
-            """, (
-                unique_id,
-                event_name,
-                event_description,
-                json.dumps(data['menu_data']),
-                expires_at
-            ))
+            placeholders = ', '.join(['?'] * len(cols))
+            query = f"INSERT INTO event_menus ({', '.join(cols)}) VALUES ({placeholders})"
+            cursor.execute(query, tuple(vals))
+            event_id = cursor.lastrowid
         
         conn.commit()
         
         response_data = {
-            'id': cursor.lastrowid,
+            'id': event_id,
             'unique_id': unique_id,
             'name': event_name,
             'description': event_description,
@@ -996,21 +967,39 @@ def migrate_readonly_endpoint():
 
 @app.route('/api/event-menus', methods=['GET'])
 def list_event_menus():
-    """List all non-expired event menus (for admin/debug purposes)"""
+    """List event menus - filtered by user, or all for admin"""
     conn = get_db_connection()
     database_url = os.getenv('DATABASE_URL')
     is_postgres = database_url and database_url.startswith('postgres')
     
     try:
+        user = get_current_user()
+        filter_my_events = request.args.get('filter') == 'my_events'
+        
+        # Build WHERE clause
+        where_clauses = ["expires_at > NOW()" if is_postgres else "expires_at > datetime('now')"]
+        params = []
+        
+        if user:
+            if filter_my_events or user.get('role') != 'admin':
+                # Filter to user's events only
+                where_clauses.append("created_by = " + ("%s" if is_postgres else "?"))
+                params.append(user['id'])
+            # Admin sees all if not filtering
+        else:
+            # Not logged in - return empty (or could return public events)
+            return jsonify([])
+        
+        where_sql = " AND ".join(where_clauses)
+        
         if is_postgres:
-            # PostgreSQL - RealDictCursor already returns dicts
             cursor = conn.cursor()
-            cursor.execute("""
-                SELECT id, unique_id, name, description, menu_data, host_name, created_at, expires_at
+            cursor.execute(f"""
+                SELECT id, unique_id, name, description, menu_data, host_name, created_at, expires_at, created_by
                 FROM event_menus 
-                WHERE expires_at > NOW()
+                WHERE {where_sql}
                 ORDER BY created_at DESC
-            """)
+            """, tuple(params))
             rows = cursor.fetchall()
             event_menus = []
             for row in rows:
@@ -1022,17 +1011,17 @@ def list_event_menus():
                     'menu_data': row['menu_data'],  # JSONB or JSON string
                     'host_name': row['host_name'],
                     'created_at': row['created_at'].isoformat() if row['created_at'] else None,
-                    'expires_at': row['expires_at'].isoformat() if row['expires_at'] else None
+                    'expires_at': row['expires_at'].isoformat() if row['expires_at'] else None,
+                    'created_by': row['created_by']
                 }
                 event_menus.append(menu)
         else:
-            # SQLite
-            cursor = conn.execute("""
-                SELECT id, unique_id, name, description, menu_data, host_name, created_at, expires_at
+            cursor = conn.execute(f"""
+                SELECT id, unique_id, name, description, menu_data, host_name, created_at, expires_at, created_by
                 FROM event_menus 
-                WHERE expires_at > datetime('now')
+                WHERE {where_sql}
                 ORDER BY created_at DESC
-            """)
+            """, tuple(params))
             
             event_menus = []
             for row in cursor.fetchall():
@@ -1044,7 +1033,8 @@ def list_event_menus():
                     'menu_data': row[4],  # JSON string
                     'host_name': row[5],
                     'created_at': row[6],
-                    'expires_at': row[7]
+                    'expires_at': row[7],
+                    'created_by': row[8] if len(row) > 8 else None
                 }
                 event_menus.append(menu)
         
