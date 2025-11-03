@@ -359,6 +359,8 @@ function App() {
   const [registerUsername, setRegisterUsername] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
+  const [showVerifyEmailModal, setShowVerifyEmailModal] = useState(false);
+  const [verificationToken, setVerificationToken] = useState('');
 
   // Check authentication status on mount
   useEffect(() => {
@@ -1050,7 +1052,30 @@ function App() {
               <div className="text-xs text-[#9945FF] mb-2">👑 Admin</div>
             )}
             {!currentUser.email_verified && (
-              <div className="text-xs text-yellow-400 mb-2">⚠️ Email not verified</div>
+              <>
+                <div className="text-xs text-yellow-400 mb-2">⚠️ Email not verified</div>
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(`${API_BASE_URL}/get-verification-token`, {
+                        credentials: 'include'
+                      });
+                      if (response.ok) {
+                        const data = await response.json();
+                        setVerificationToken(data.verification_token);
+                        setShowVerifyEmailModal(true);
+                      } else {
+                        alert('Could not retrieve verification token. You may need to re-register.');
+                      }
+                    } catch (error) {
+                      alert('Error retrieving verification token');
+                    }
+                  }}
+                  className="w-full text-xs bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 px-2 py-1 rounded-[6px] mb-2 transition"
+                >
+                  Verify Email
+                </button>
+              </>
             )}
             <button
               onClick={handleLogout}

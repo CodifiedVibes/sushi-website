@@ -1269,6 +1269,143 @@ def verify_email(token):
     finally:
         conn.close()
 
+@app.route('/api/get-verification-token', methods=['GET'])
+@require_auth
+def get_verification_token():
+    """Get the current user's verification token"""
+    user = get_current_user()
+    conn = get_db_connection()
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
+    
+    try:
+        if is_postgres:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT verification_token, verification_token_expires 
+                FROM users 
+                WHERE id = %s
+            """, (user['id'],))
+            row = cursor.fetchone()
+        else:
+            cursor = conn.execute("""
+                SELECT verification_token, verification_token_expires 
+                FROM users 
+                WHERE id = ?
+            """, (user['id'],))
+            row = cursor.fetchone()
+        
+        if not row:
+            return jsonify({'error': 'User not found'}), 404
+        
+        token_data = dict(row) if is_postgres else dict(zip([col[0] for col in cursor.description], row))
+        
+        if not token_data.get('verification_token'):
+            return jsonify({'error': 'No verification token found'}), 404
+        
+        return jsonify({
+            'verification_token': token_data['verification_token'],
+            'expires_at': token_data['verification_token_expires'].isoformat() if token_data.get('verification_token_expires') else None
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/admin/verify-email', methods=['POST'])
+@require_admin
+def admin_verify_email():
+    """Admin endpoint to verify any user's email"""
+    data = request.get_json()
+    user_id = data.get('user_id')
+    username = data.get('username')
+    
+    if not user_id and not username:
+        return jsonify({'error': 'user_id or username required'}), 400
+    
+    conn = get_db_connection()
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
+    
+    try:
+        # Find user
+        if is_postgres:
+            cursor = conn.cursor()
+            if user_id:
+                cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+            else:
+                cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
+            user_row = cursor.fetchone()
+            if not user_row:
+                return jsonify({'error': 'User not found'}), 404
+            target_user_id = user_row['id']
+            
+            cursor.execute("""
+                UPDATE users 
+                SET email_verified = TRUE, verification_token = NULL, verification_token_expires = NULL
+                WHERE id = %s
+            """, (target_user_id,))
+        else:
+            if user_id:
+                cursor = conn.execute("SELECT id FROM users WHERE id = ?", (user_id,))
+            else:
+                cursor = conn.execute("SELECT id FROM users WHERE username = ?", (username,))
+            user_row = cursor.fetchone()
+            if not user_row:
+                return jsonify({'error': 'User not found'}), 404
+            target_user_id = user_row[0]
+            
+            conn.execute("""
+                UPDATE users 
+                SET email_verified = 1, verification_token = NULL, verification_token_expires = NULL
+                WHERE id = ?
+            """, (target_user_id,))
+        
+        conn.commit()
+        return jsonify({'message': 'Email verified successfully'}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/admin/set-admin', methods=['POST'])
+@require_admin
+def set_admin():
+    """Admin endpoint to set another user as admin"""
+    data = request.get_json()
+    user_id = data.get('user_id')
+    username = data.get('username')
+    
+    if not user_id and not username:
+        return jsonify({'error': 'user_id or username required'}), 400
+    
+    conn = get_db_connection()
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
+    
+    try:
+        if is_postgres:
+            cursor = conn.cursor()
+            if user_id:
+                cursor.execute("UPDATE users SET role = 'admin' WHERE id = %s", (user_id,))
+            else:
+                cursor.execute("UPDATE users SET role = 'admin' WHERE username = %s", (username,))
+        else:
+            if user_id:
+                conn.execute("UPDATE users SET role = 'admin' WHERE id = ?", (user_id,))
+            else:
+                conn.execute("UPDATE users SET role = 'admin' WHERE username = ?", (username,))
+        
+        conn.commit()
+        return jsonify({'message': 'Admin role set successfully'}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
