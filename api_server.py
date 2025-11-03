@@ -136,7 +136,14 @@ def get_current_user():
             cursor = conn.execute("SELECT id, username, email, role, email_verified FROM users WHERE id = ?", (user_id,))
             row = cursor.fetchone()
             if row:
-                return dict(row)
+                # SQLite returns tuple, map to dict
+                return {
+                    'id': row[0],
+                    'username': row[1],
+                    'email': row[2],
+                    'role': row[3] if len(row) > 3 else 'user',
+                    'email_verified': row[4] if len(row) > 4 else False
+                }
         return None
     except Exception:
         return None
@@ -1203,7 +1210,19 @@ def login():
         if not row:
             return jsonify({'error': 'Invalid email or password'}), 401
         
-        user = dict(row) if is_postgres else dict(row)
+        # Handle SQLite vs PostgreSQL row formats
+        if is_postgres:
+            user = dict(row)
+        else:
+            # SQLite returns tuple, map to dict
+            user = {
+                'id': row[0],
+                'username': row[1],
+                'email': row[2],
+                'password_hash': row[3],
+                'role': row[4] if len(row) > 4 else 'user',
+                'email_verified': row[5] if len(row) > 5 else False
+            }
         
         # Check password
         if not check_password_hash(user['password_hash'], password):
@@ -1278,7 +1297,16 @@ def verify_email(token):
         if not row:
             return jsonify({'error': 'Invalid verification token'}), 400
         
-        user = dict(row) if is_postgres else dict(row)
+        # Handle SQLite vs PostgreSQL row formats
+        if is_postgres:
+            user = dict(row)
+        else:
+            # SQLite returns tuple, map to dict
+            user = {
+                'id': row[0],
+                'verification_token': row[1] if len(row) > 1 else None,
+                'verification_token_expires': row[2] if len(row) > 2 else None
+            }
         
         # Check if token expired (24 hours)
         if user.get('verification_token_expires'):
