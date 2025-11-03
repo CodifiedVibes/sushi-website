@@ -1275,8 +1275,6 @@ def get_verification_token():
     user = get_current_user()
     if not user:
         return jsonify({'error': 'Authentication required'}), 401
-    """Get the current user's verification token"""
-    user = get_current_user()
     conn = get_db_connection()
     database_url = os.getenv('DATABASE_URL')
     is_postgres = database_url and database_url.startswith('postgres')
