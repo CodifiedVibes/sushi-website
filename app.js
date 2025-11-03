@@ -347,6 +347,18 @@ function App() {
   const [menuFilter, setMenuFilter] = useState('all'); // all, top-ranked, salmon, tuna, veggie
   const [showShoppingCart, setShowShoppingCart] = useState(false); // Control shopping cart panel visibility
   const [showTipsPanel, setShowTipsPanel] = useState(false); // Control tips panel visibility
+  
+  // Authentication state
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState(null);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [registerUsername, setRegisterUsername] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
 
   // Check authentication status on mount
   useEffect(() => {
