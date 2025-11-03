@@ -1270,8 +1270,11 @@ def verify_email(token):
         conn.close()
 
 @app.route('/api/get-verification-token', methods=['GET'])
-@require_auth
 def get_verification_token():
+    """Get the current user's verification token (doesn't require email verification)"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Authentication required'}), 401
     """Get the current user's verification token"""
     user = get_current_user()
     conn = get_db_connection()
