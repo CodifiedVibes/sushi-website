@@ -2661,6 +2661,92 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Verify Email Modal */}
+      {showVerifyEmailModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#2a2a2a] rounded-[18px] p-6 w-full max-w-md mx-4 border border-[#00D4AA]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-[#00D4AA]">Verify Email</h2>
+              <button
+                className="text-[#b0b8c1] hover:text-white text-2xl"
+                onClick={() => {
+                  setShowVerifyEmailModal(false);
+                  setVerificationToken('');
+                  setAuthError(null);
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            {verificationToken ? (
+              <div className="space-y-4">
+                <p className="text-[#b0b8c1] text-sm mb-4">
+                  Since email isn't configured, use this token to verify your email:
+                </p>
+                
+                <div className="bg-[#1a1a1a] p-3 rounded-[8px] border border-[#3a3a3a]">
+                  <div className="text-xs text-[#b0b8c1] mb-1">Verification Token:</div>
+                  <div className="text-sm font-mono text-[#00D4AA] break-all">{verificationToken}</div>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(`${API_BASE_URL}/verify-email/${verificationToken}`, {
+                          credentials: 'include'
+                        });
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                          alert('Email verified successfully!');
+                          setShowVerifyEmailModal(false);
+                          // Refresh user
+                          const userResponse = await fetch(`${API_BASE_URL}/me`, { credentials: 'include' });
+                          if (userResponse.ok) {
+                            const user = await userResponse.json();
+                            setCurrentUser(user);
+                          }
+                        } else {
+                          setAuthError(data.error || 'Verification failed');
+                        }
+                      } catch (error) {
+                        setAuthError('Network error. Please try again.');
+                      }
+                    }}
+                    className="flex-1 bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[8px] font-semibold hover:bg-[#00B894] transition"
+                  >
+                    Verify Now
+                  </button>
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/verify-email/${verificationToken}`;
+                      navigator.clipboard.writeText(url).then(() => {
+                        alert('Verification URL copied to clipboard!');
+                      });
+                    }}
+                    className="px-4 py-2 bg-[#2a2a2a] text-[#00D4AA] border border-[#00D4AA] rounded-[8px] font-semibold hover:bg-[#3a3a3a] transition"
+                  >
+                    Copy Link
+                  </button>
+                </div>
+                
+                {authError && (
+                  <div className="bg-red-500/20 border border-red-500 rounded-[8px] p-3 text-sm text-red-400">
+                    {authError}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-[#b0b8c1] text-sm">
+                Loading verification token...
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       
       <style>{`
         .main-content {
