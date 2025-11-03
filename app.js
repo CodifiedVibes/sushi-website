@@ -316,6 +316,108 @@ function App() {
   const [showShoppingCart, setShowShoppingCart] = useState(false); // Control shopping cart panel visibility
   const [showTipsPanel, setShowTipsPanel] = useState(false); // Control tips panel visibility
 
+  // Check authentication status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/me`, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const user = await response.json();
+          setCurrentUser(user);
+        }
+      } catch (error) {
+        console.log('Not authenticated');
+      }
+    };
+    checkAuth();
+  }, []);
+
+  // Authentication functions
+  const handleLogin = async (e) => {
+    if (e) e.preventDefault();
+    setAuthError(null);
+    setAuthLoading(true);
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: loginEmail,
+          password: loginPassword
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setCurrentUser(data.user);
+        setShowLoginModal(false);
+        setLoginEmail('');
+        setLoginPassword('');
+        setAuthError(null);
+      } else {
+        setAuthError(data.error || 'Login failed');
+      }
+    } catch (error) {
+      setAuthError('Network error. Please try again.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleRegister = async (e) => {
+    if (e) e.preventDefault();
+    setAuthError(null);
+    setAuthLoading(true);
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          username: registerUsername,
+          email: registerEmail,
+          password: registerPassword
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setAuthError(null);
+        alert('Registration successful! Please check your email to verify your account before logging in.');
+        setShowRegisterModal(false);
+        setRegisterUsername('');
+        setRegisterEmail('');
+        setRegisterPassword('');
+        setShowLoginModal(true);
+      } else {
+        setAuthError(data.error || 'Registration failed');
+      }
+    } catch (error) {
+      setAuthError('Network error. Please try again.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      setCurrentUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   useEffect(() => {
     console.log('Starting data fetch...');
     // Fetch data from API endpoints
@@ -520,6 +622,7 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           name,
           description,
@@ -602,9 +705,12 @@ function App() {
     }
   };
 
-  const listEventMenus = async () => {
+  const listEventMenus = async (filter = null) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/event-menus`);
+      const url = filter ? `${API_BASE_URL}/event-menus?filter=${filter}` : `${API_BASE_URL}/event-menus`;
+      const response = await fetch(url, {
+        credentials: 'include'
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch event menus');
@@ -620,7 +726,7 @@ function App() {
 
   // Load event menus when on cart page
   useEffect(() => {
-    if (activeNav === 'cart') {
+    if (activeNav === 'cart' && currentUser && currentUser.email_verified) {
       const loadMenus = async () => {
         setEventMenusLoading(true);
         try {
@@ -634,8 +740,11 @@ function App() {
         }
       };
       loadMenus();
+    } else if (activeNav === 'cart' && (!currentUser || !currentUser.email_verified)) {
+      setEventMenus([]);
+      setEventMenusLoading(false);
     }
-  }, [activeNav]);
+  }, [activeNav, currentUser]);
 
   // Recipes state
   const [selectedRecipe, setSelectedRecipe] = useState(null);
@@ -879,6 +988,40 @@ function App() {
           <span className="text-2xl font-bold tracking-tight text-[#00D4AA]" style={{letterSpacing: '0.05em'}}>CASSaROLL</span>
           <button className="sm:hidden text-2xl text-[#00D4AA] focus:outline-none" onClick={() => setNavOpen(false)}>&times;</button>
         </div>
+        {/* User account section */}
+        {currentUser ? (
+          <div className="mx-4 mb-4 p-3 bg-[#2a2a2a] rounded-[12px]">
+            <div className="text-sm text-[#b0b8c1] mb-1">Logged in as</div>
+            <div className="font-semibold text-[#00D4AA] mb-2">{currentUser.username}</div>
+            {currentUser.role === 'admin' && (
+              <div className="text-xs text-[#9945FF] mb-2">👑 Admin</div>
+            )}
+            {!currentUser.email_verified && (
+              <div className="text-xs text-yellow-400 mb-2">⚠️ Email not verified</div>
+            )}
+            <button
+              onClick={handleLogout}
+              className="w-full text-xs text-[#b0b8c1] hover:text-white transition"
+            >
+              Logout
+            </button>
+          </div>
+        ) : (
+          <div className="mx-4 mb-4 flex gap-2">
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className="flex-1 bg-[#00D4AA] text-[#1a1a1a] px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#00B894] transition"
+            >
+              Login
+            </button>
+            <button
+              onClick={() => setShowRegisterModal(true)}
+              className="flex-1 bg-[#3a3a3a] text-white px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#4a4a4a] transition"
+            >
+              Sign Up
+            </button>
+          </div>
+        )}
         <div 
           className="mx-4 mb-4 p-3 bg-[#2a2a2a] rounded-[12px] shadow flex flex-col items-start cursor-pointer hover:bg-[#232946] transition" 
           onClick={() => {
@@ -1334,9 +1477,28 @@ function App() {
               {/* Empty State */}
               {!eventMenusLoading && eventMenus.length === 0 && (
                 <div className="text-center py-12 bg-[#2a2a2a] rounded-[12px] border border-[#3a3a3a]">
-                  <div className="text-[#b0b8c1] text-lg mb-2">No event menus yet</div>
-                  <div className="text-sm text-[#b0b8c1] mb-4">Create event menus from the shopping cart side panel</div>
-                  <div className="text-xs text-[#b0b8c1]">Add items to your cart, then click the "📅 Event" button</div>
+                  {!currentUser ? (
+                    <>
+                      <div className="text-[#b0b8c1] text-lg mb-2">Please login to view your event menus</div>
+                      <button
+                        onClick={() => setShowLoginModal(true)}
+                        className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[8px] font-semibold hover:bg-[#00B894] transition mt-4"
+                      >
+                        Login
+                      </button>
+                    </>
+                  ) : !currentUser.email_verified ? (
+                    <>
+                      <div className="text-[#b0b8c1] text-lg mb-2">Please verify your email</div>
+                      <div className="text-sm text-[#b0b8c1] mb-4">Check your email for a verification link</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-[#b0b8c1] text-lg mb-2">No event menus yet</div>
+                      <div className="text-sm text-[#b0b8c1] mb-4">Create event menus from the shopping cart side panel</div>
+                      <div className="text-xs text-[#b0b8c1]">Add items to your cart, then click the "📅 Event" button</div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -1822,7 +1984,15 @@ function App() {
           <h2 className="text-xl font-bold text-[#00D4AA]">Shopping Cart</h2>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowCreateEventMenu(true)}
+              onClick={() => {
+                if (!currentUser) {
+                  setShowLoginModal(true);
+                } else if (!currentUser.email_verified) {
+                  alert('Please verify your email before creating event menus.');
+                } else {
+                  setShowCreateEventMenu(true);
+                }
+              }}
               className="bg-[#00D4AA] hover:bg-[#00B894] text-white px-3 py-1 rounded-[8px] text-sm font-semibold transition-colors"
               title="Create Event Menu"
             >
@@ -2190,6 +2360,12 @@ function App() {
                         const menus = await listEventMenus();
                         setEventMenus(menus || []);
                       }
+                      // Refresh user to get updated email_verified status
+                      const userResponse = await fetch(`${API_BASE_URL}/me`, { credentials: 'include' });
+                      if (userResponse.ok) {
+                        const user = await userResponse.json();
+                        setCurrentUser(user);
+                      }
                       
                       const shareUrl = `${window.location.origin}/event/${result.unique_id}`;
                       
@@ -2244,6 +2420,166 @@ function App() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Login Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#2a2a2a] rounded-[18px] p-6 w-full max-w-md mx-4 border border-[#00D4AA]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-[#00D4AA]">Login</h2>
+              <button
+                className="text-[#b0b8c1] hover:text-white text-2xl"
+                onClick={() => {
+                  setShowLoginModal(false);
+                  setAuthError(null);
+                  setLoginEmail('');
+                  setLoginPassword('');
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleLogin} className="space-y-4">
+              {authError && (
+                <div className="bg-red-500/20 border border-red-500 rounded-[8px] p-3 text-sm text-red-400">
+                  {authError}
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-semibold text-white mb-2">Email</label>
+                <input
+                  type="email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white focus:border-[#00D4AA] focus:outline-none"
+                  placeholder="your@email.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-white mb-2">Password</label>
+                <input
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white focus:border-[#00D4AA] focus:outline-none"
+                  placeholder="••••••••"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  className="flex-1 bg-[#00D4AA] hover:bg-[#00B894] text-white px-4 py-2 rounded-[8px] font-semibold transition-colors disabled:opacity-50"
+                >
+                  {authLoading ? 'Logging in...' : 'Login'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowLoginModal(false);
+                    setShowRegisterModal(true);
+                    setAuthError(null);
+                  }}
+                  className="flex-1 bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white px-4 py-2 rounded-[8px] font-semibold transition-colors"
+                >
+                  Sign Up
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Register Modal */}
+      {showRegisterModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#2a2a2a] rounded-[18px] p-6 w-full max-w-md mx-4 border border-[#00D4AA]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-[#00D4AA]">Create Account</h2>
+              <button
+                className="text-[#b0b8c1] hover:text-white text-2xl"
+                onClick={() => {
+                  setShowRegisterModal(false);
+                  setAuthError(null);
+                  setRegisterUsername('');
+                  setRegisterEmail('');
+                  setRegisterPassword('');
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleRegister} className="space-y-4">
+              {authError && (
+                <div className="bg-red-500/20 border border-red-500 rounded-[8px] p-3 text-sm text-red-400">
+                  {authError}
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-semibold text-white mb-2">Username</label>
+                <input
+                  type="text"
+                  value={registerUsername}
+                  onChange={(e) => setRegisterUsername(e.target.value)}
+                  required
+                  minLength={3}
+                  maxLength={50}
+                  pattern="[a-zA-Z0-9_]+"
+                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white focus:border-[#00D4AA] focus:outline-none"
+                  placeholder="username"
+                />
+                <div className="text-xs text-[#b0b8c1] mt-1">Letters, numbers, and underscores only</div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-white mb-2">Email</label>
+                <input
+                  type="email"
+                  value={registerEmail}
+                  onChange={(e) => setRegisterEmail(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white focus:border-[#00D4AA] focus:outline-none"
+                  placeholder="your@email.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-white mb-2">Password</label>
+                <input
+                  type="password"
+                  value={registerPassword}
+                  onChange={(e) => setRegisterPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white focus:border-[#00D4AA] focus:outline-none"
+                  placeholder="••••••••"
+                />
+                <div className="text-xs text-[#b0b8c1] mt-1">At least 8 characters</div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  className="flex-1 bg-[#00D4AA] hover:bg-[#00B894] text-white px-4 py-2 rounded-[8px] font-semibold transition-colors disabled:opacity-50"
+                >
+                  {authLoading ? 'Creating...' : 'Sign Up'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRegisterModal(false);
+                    setShowLoginModal(true);
+                    setAuthError(null);
+                  }}
+                  className="flex-1 bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white px-4 py-2 rounded-[8px] font-semibold transition-colors"
+                >
+                  Login
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
