@@ -169,6 +169,11 @@ def require_admin(f):
 
 def send_verification_email(email, verification_token):
     """Send email verification link"""
+    # Check if email is configured
+    if not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD'):
+        print("Email not configured (MAIL_USERNAME/MAIL_PASSWORD not set)")
+        return False
+    
     try:
         # Use frontend URL for verification link
         base_url = os.getenv('BASE_URL', 'https://cassaroll.io')
@@ -186,6 +191,7 @@ def send_verification_email(email, verification_token):
             """
         )
         mail.send(msg)
+        print(f"Verification email sent to {email}")
         return True
     except Exception as e:
         print(f"Failed to send email: {e}")
@@ -1104,12 +1110,22 @@ def register():
         
         conn.commit()
         
-        # Send verification email
-        send_verification_email(email, verification_token)
+        # Send verification email (non-blocking - don't fail registration if email fails)
+        email_sent = False
+        try:
+            email_sent = send_verification_email(email, verification_token)
+        except Exception as e:
+            print(f"Email sending failed (non-critical): {e}")
+        
+        message = 'Registration successful. Please check your email to verify your account.'
+        if not email_sent:
+            message += f' (Note: Email verification not configured. Contact admin to verify account. Token: {verification_token})'
         
         return jsonify({
-            'message': 'Registration successful. Please check your email to verify your account.',
-            'user_id': user_id
+            'message': message,
+            'user_id': user_id,
+            'email_sent': email_sent,
+            'verification_token': verification_token if not email_sent else None
         }), 201
         
     except Exception as e:

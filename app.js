@@ -430,19 +430,28 @@ function App() {
         })
       });
       
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Registration failed' }));
+        setAuthError(errorData.error || 'Registration failed');
+        setAuthLoading(false);
+        return;
+      }
+      
       const data = await response.json();
       
-      if (response.ok) {
-        setAuthError(null);
-        alert('Registration successful! Please check your email to verify your account before logging in.');
-        setShowRegisterModal(false);
-        setRegisterUsername('');
-        setRegisterEmail('');
-        setRegisterPassword('');
-        setShowLoginModal(true);
+      if (data.email_sent === false) {
+        // Email not configured - show token for manual verification
+        alert(`Registration successful! Email verification is not configured.\n\nFor testing, you can manually verify your account or contact admin.\n\nVerification token: ${data.verification_token || 'check server logs'}`);
       } else {
-        setAuthError(data.error || 'Registration failed');
+        alert('Registration successful! Please check your email to verify your account before logging in.');
       }
+      
+      setAuthError(null);
+      setShowRegisterModal(false);
+      setRegisterUsername('');
+      setRegisterEmail('');
+      setRegisterPassword('');
+      setShowLoginModal(true);
     } catch (error) {
       setAuthError('Network error. Please try again.');
     } finally {
