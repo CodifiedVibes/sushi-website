@@ -1299,14 +1299,55 @@ def get_verification_token():
         if not row:
             return jsonify({'error': 'User not found'}), 404
         
-        token_data = dict(row) if is_postgres else dict(zip([col[0] for col in cursor.description], row))
+        # Handle SQLite vs PostgreSQL row formats
+        if is_postgres:
+            token_data = dict(row)
+        else:
+            # SQLite row is a tuple, map by index
+            token_data = {
+                'verification_token': row[0] if len(row) > 0 else None,
+                'verification_token_expires': row[1] if len(row) > 1 else None
+            }
         
+        # If no token exists, generate a new one
         if not token_data.get('verification_token'):
-            return jsonify({'error': 'No verification token found'}), 404
+            # Generate new verification token
+            import secrets
+            verification_token = secrets.token_urlsafe(32)
+            verification_expires = datetime.now() + timedelta(hours=24)
+            
+            if is_postgres:
+                cursor.execute("""
+                    UPDATE users 
+                    SET verification_token = %s, verification_token_expires = %s
+                    WHERE id = %s
+                """, (verification_token, verification_expires, user['id']))
+            else:
+                conn.execute("""
+                    UPDATE users 
+                    SET verification_token = ?, verification_token_expires = ?
+                    WHERE id = ?
+                """, (verification_token, verification_expires, user['id']))
+            conn.commit()
+            
+            return jsonify({
+                'verification_token': verification_token,
+                'expires_at': verification_expires.isoformat()
+            }), 200
+        
+        expires_at = token_data.get('verification_token_expires')
+        if expires_at and isinstance(expires_at, str):
+            # Already a string, use as is
+            expires_iso = expires_at
+        elif expires_at:
+            # It's a datetime object, convert to ISO
+            expires_iso = expires_at.isoformat() if hasattr(expires_at, 'isoformat') else str(expires_at)
+        else:
+            expires_iso = None
         
         return jsonify({
             'verification_token': token_data['verification_token'],
-            'expires_at': token_data['verification_token_expires'].isoformat() if token_data.get('verification_token_expires') else None
+            'expires_at': expires_iso
         }), 200
         
     except Exception as e:
