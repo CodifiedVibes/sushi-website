@@ -4,10 +4,12 @@ Flask API server for Sushi Restaurant
 Serves data from SQLite database
 """
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, session
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_mail import Mail, Message
+from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import json
 import uuid
@@ -19,14 +21,30 @@ import re
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 
+# Session configuration for authentication
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production-' + str(uuid.uuid4()))
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('DATABASE_URL') is not None  # HTTPS only in production
+
+# Email configuration
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', '')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', '')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', app.config['MAIL_USERNAME'])
+
+mail = Mail(app)
+
 # Security: Configure CORS with specific origins
 CORS(app, origins=[
     "https://cassaroll.io",
     "https://www.cassaroll.io", 
     "https://sushi-website-production.up.railway.app",
     "http://localhost:8000",  # For local development
-    "http://127.0.0.1:8000"   # For local development
-])
+    "http://127.0.0.1:8000",   # For local development
+    "http://localhost:5001"   # For local API
+], supports_credentials=True)
 
 # Security: Add security headers
 @app.after_request
@@ -95,6 +113,79 @@ def get_db_connection():
         conn.row_factory = sqlite3.Row
     
     return conn
+
+# Authentication helper functions
+def get_current_user():
+    """Get current logged in user from session"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return None
+    
+    conn = get_db_connection()
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
+    
+    try:
+        if is_postgres:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, username, email, role, email_verified FROM users WHERE id = %s", (user_id,))
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+        else:
+            cursor = conn.execute("SELECT id, username, email, role, email_verified FROM users WHERE id = ?", (user_id,))
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+        return None
+    except Exception:
+        return None
+    finally:
+        conn.close()
+
+def require_auth(f):
+    """Decorator to require authentication"""
+    def wrapper(*args, **kwargs):
+        user = get_current_user()
+        if not user:
+            return jsonify({'error': 'Authentication required'}), 401
+        if not user.get('email_verified'):
+            return jsonify({'error': 'Email verification required'}), 403
+        return f(*args, **kwargs)
+    wrapper.__name__ = f.__name__
+    return wrapper
+
+def require_admin(f):
+    """Decorator to require admin role"""
+    def wrapper(*args, **kwargs):
+        user = get_current_user()
+        if not user:
+            return jsonify({'error': 'Authentication required'}), 401
+        if user.get('role') != 'admin':
+            return jsonify({'error': 'Admin access required'}), 403
+        return f(*args, **kwargs)
+    wrapper.__name__ = f.__name__
+    return wrapper
+
+def send_verification_email(email, verification_token):
+    """Send email verification link"""
+    try:
+        verify_url = f"{os.getenv('BASE_URL', 'http://localhost:5001')}/api/verify-email/{verification_token}"
+        msg = Message(
+            'Verify your CASSaROLL account',
+            recipients=[email],
+            html=f"""
+            <h2>Welcome to CASSaROLL!</h2>
+            <p>Please verify your email address by clicking the link below:</p>
+            <p><a href="{verify_url}">{verify_url}</a></p>
+            <p>This link will expire in 24 hours.</p>
+            """
+        )
+        mail.send(msg)
+        return True
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+        return False
 
 def migrate_readonly_column():
     """Add read_only column to event_menus table if it doesn't exist"""
@@ -546,6 +637,7 @@ def get_recipes_by_category(category):
 # Event Menu API endpoints
 @app.route('/api/event-menus', methods=['POST'])
 @limiter.limit("10 per minute")  # Limit event creation to 10 per minute per IP
+@require_auth
 def create_event_menu():
     """Create a new event menu"""
     conn = get_db_connection()
@@ -957,6 +1049,214 @@ def list_event_menus():
                 event_menus.append(menu)
         
         return jsonify(event_menus)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Authentication endpoints
+@app.route('/api/register', methods=['POST'])
+@limiter.limit("5 per minute")
+def register():
+    """Register a new user"""
+    conn = get_db_connection()
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
+    
+    try:
+        data = request.get_json()
+        if not data or not data.get('email') or not data.get('password') or not data.get('username'):
+            return jsonify({'error': 'Email, username, and password are required'}), 400
+        
+        email = data.get('email', '').strip().lower()
+        username = data.get('username', '').strip()
+        password = data.get('password', '').strip()
+        
+        # Validate inputs
+        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+            return jsonify({'error': 'Invalid email format'}), 400
+        if len(username) < 3 or len(username) > 50:
+            return jsonify({'error': 'Username must be 3-50 characters'}), 400
+        if len(password) < 8:
+            return jsonify({'error': 'Password must be at least 8 characters'}), 400
+        if not re.match(r'^[a-zA-Z0-9_]+$', username):
+            return jsonify({'error': 'Username can only contain letters, numbers, and underscores'}), 400
+        
+        # Check if user already exists
+        if is_postgres:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM users WHERE email = %s OR username = %s", (email, username))
+        else:
+            cursor = conn.execute("SELECT id FROM users WHERE email = ? OR username = ?", (email, username))
+        
+        if cursor.fetchone():
+            return jsonify({'error': 'Email or username already exists'}), 400
+        
+        # Create user
+        password_hash = generate_password_hash(password)
+        verification_token = str(uuid.uuid4())
+        verification_expires = datetime.now() + timedelta(days=1)
+        
+        if is_postgres:
+            cursor.execute("""
+                INSERT INTO users (username, email, password_hash, verification_token, verification_token_expires, created_at)
+                VALUES (%s, %s, %s, %s, %s, NOW())
+                RETURNING id
+            """, (username, email, password_hash, verification_token, verification_expires))
+            user_id = cursor.fetchone()['id']
+        else:
+            cursor.execute("""
+                INSERT INTO users (username, email, password_hash, verification_token, verification_token_expires, created_at)
+                VALUES (?, ?, ?, ?, ?, datetime('now'))
+            """, (username, email, password_hash, verification_token, verification_expires))
+            user_id = cursor.lastrowid
+        
+        conn.commit()
+        
+        # Send verification email
+        send_verification_email(email, verification_token)
+        
+        return jsonify({
+            'message': 'Registration successful. Please check your email to verify your account.',
+            'user_id': user_id
+        }), 201
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/login', methods=['POST'])
+@limiter.limit("10 per minute")
+def login():
+    """Login user"""
+    conn = get_db_connection()
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
+    
+    try:
+        data = request.get_json()
+        if not data or not data.get('email') or not data.get('password'):
+            return jsonify({'error': 'Email and password are required'}), 400
+        
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '').strip()
+        
+        # Find user
+        if is_postgres:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, username, email, password_hash, role, email_verified FROM users WHERE email = %s", (email,))
+            row = cursor.fetchone()
+        else:
+            cursor = conn.execute("SELECT id, username, email, password_hash, role, email_verified FROM users WHERE email = ?", (email,))
+            row = cursor.fetchone()
+        
+        if not row:
+            return jsonify({'error': 'Invalid email or password'}), 401
+        
+        user = dict(row) if is_postgres else dict(row)
+        
+        # Check password
+        if not check_password_hash(user['password_hash'], password):
+            return jsonify({'error': 'Invalid email or password'}), 401
+        
+        # Set session
+        session['user_id'] = user['id']
+        session.permanent = True
+        
+        return jsonify({
+            'message': 'Login successful',
+            'user': {
+                'id': user['id'],
+                'username': user['username'],
+                'email': user['email'],
+                'role': user['role'],
+                'email_verified': bool(user['email_verified'])
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    """Logout user"""
+    session.clear()
+    return jsonify({'message': 'Logout successful'}), 200
+
+@app.route('/api/me', methods=['GET'])
+def get_current_user_info():
+    """Get current user information"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    return jsonify({
+        'id': user['id'],
+        'username': user['username'],
+        'email': user['email'],
+        'role': user['role'],
+        'email_verified': bool(user.get('email_verified', False))
+    }), 200
+
+@app.route('/api/verify-email/<token>', methods=['GET'])
+def verify_email(token):
+    """Verify user email"""
+    conn = get_db_connection()
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
+    
+    try:
+        # Find user by token
+        if is_postgres:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, verification_token, verification_token_expires 
+                FROM users 
+                WHERE verification_token = %s
+            """, (token,))
+            row = cursor.fetchone()
+        else:
+            cursor = conn.execute("""
+                SELECT id, verification_token, verification_token_expires 
+                FROM users 
+                WHERE verification_token = ?
+            """, (token,))
+            row = cursor.fetchone()
+        
+        if not row:
+            return jsonify({'error': 'Invalid verification token'}), 400
+        
+        user = dict(row) if is_postgres else dict(row)
+        
+        # Check if token expired (24 hours)
+        if user.get('verification_token_expires'):
+            expires = user['verification_token_expires']
+            if isinstance(expires, str):
+                expires = datetime.fromisoformat(expires.replace('Z', '+00:00'))
+            if expires < datetime.now():
+                return jsonify({'error': 'Verification token expired'}), 400
+        
+        # Verify email
+        if is_postgres:
+            cursor.execute("""
+                UPDATE users 
+                SET email_verified = TRUE, verification_token = NULL, verification_token_expires = NULL
+                WHERE id = %s
+            """, (user['id'],))
+        else:
+            cursor.execute("""
+                UPDATE users 
+                SET email_verified = 1, verification_token = NULL, verification_token_expires = NULL
+                WHERE id = ?
+            """, (user['id'],))
+        
+        conn.commit()
+        
+        return jsonify({'message': 'Email verified successfully'}), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
