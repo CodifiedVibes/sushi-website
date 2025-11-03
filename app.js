@@ -258,7 +258,39 @@ function App() {
     if (eventId && eventId !== currentEventId) {
       loadEventMenuFromUrl(eventId);
     }
+    
+    // Check for email verification token
+    const verifyMatch = window.location.pathname.match(/^\/verify-email\/([a-zA-Z0-9-]+)$/);
+    if (verifyMatch) {
+      const token = verifyMatch[1];
+      verifyEmailToken(token);
+    }
   }, []);
+
+  const verifyEmailToken = async (token) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/verify-email/${token}`, {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        alert('Email verified successfully! You can now create event menus.');
+        // Refresh user to get updated email_verified status
+        const userResponse = await fetch(`${API_BASE_URL}/me`, { credentials: 'include' });
+        if (userResponse.ok) {
+          const user = await userResponse.json();
+          setCurrentUser(user);
+        }
+        // Clear URL
+        window.history.replaceState({}, '', '/');
+      } else {
+        alert(data.error || 'Verification failed');
+      }
+    } catch (error) {
+      alert('Verification error. Please try again.');
+    }
+  };
 
   // Load event after main data is loaded
   useEffect(() => {
