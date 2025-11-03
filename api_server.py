@@ -700,19 +700,42 @@ def create_event_menu():
 def get_event_menu(unique_id):
     """Get an event menu by unique ID"""
     conn = get_db_connection()
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
     
     try:
-        cursor = conn.execute("""
-            SELECT * FROM event_menus 
-            WHERE unique_id = ? AND expires_at > datetime('now')
-        """, (unique_id,))
-        
-        row = cursor.fetchone()
-        if not row:
-            return jsonify({'error': 'Event menu not found or expired'}), 404
-        
-        event_menu = dict(row)
-        event_menu['menu_data'] = json.loads(event_menu['menu_data'])
+        if is_postgres:
+            # PostgreSQL
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT * FROM event_menus 
+                WHERE unique_id = %s AND expires_at > NOW()
+            """, (unique_id,))
+            
+            row = cursor.fetchone()
+            if not row:
+                return jsonify({'error': 'Event menu not found or expired'}), 404
+            
+            event_menu = dict(row)
+            # Handle JSONB - it might already be a dict or a string
+            if isinstance(event_menu['menu_data'], str):
+                event_menu['menu_data'] = json.loads(event_menu['menu_data'])
+            elif isinstance(event_menu['menu_data'], dict):
+                # Already parsed JSONB
+                pass
+        else:
+            # SQLite
+            cursor = conn.execute("""
+                SELECT * FROM event_menus 
+                WHERE unique_id = ? AND expires_at > datetime('now')
+            """, (unique_id,))
+            
+            row = cursor.fetchone()
+            if not row:
+                return jsonify({'error': 'Event menu not found or expired'}), 404
+            
+            event_menu = dict(row)
+            event_menu['menu_data'] = json.loads(event_menu['menu_data'])
         
         return jsonify(event_menu)
         
@@ -888,7 +911,7 @@ def list_event_menus():
     
     try:
         if is_postgres:
-            # PostgreSQL - need to handle datetime differently and use RealDictCursor
+            # PostgreSQL - RealDictCursor already returns dicts
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT id, unique_id, name, description, menu_data, host_name, created_at, expires_at
@@ -900,14 +923,14 @@ def list_event_menus():
             event_menus = []
             for row in rows:
                 menu = {
-                    'id': row[0],
-                    'unique_id': row[1],
-                    'name': row[2],
-                    'description': row[3],
-                    'menu_data': row[4],  # Already JSON string or could be JSONB
-                    'host_name': row[5],
-                    'created_at': row[6].isoformat() if row[6] else None,
-                    'expires_at': row[7].isoformat() if row[7] else None
+                    'id': row['id'],
+                    'unique_id': row['unique_id'],
+                    'name': row['name'],
+                    'description': row['description'],
+                    'menu_data': row['menu_data'],  # JSONB or JSON string
+                    'host_name': row['host_name'],
+                    'created_at': row['created_at'].isoformat() if row['created_at'] else None,
+                    'expires_at': row['expires_at'].isoformat() if row['expires_at'] else None
                 }
                 event_menus.append(menu)
         else:

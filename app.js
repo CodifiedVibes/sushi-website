@@ -1335,18 +1335,8 @@ function App() {
               {!eventMenusLoading && eventMenus.length === 0 && (
                 <div className="text-center py-12 bg-[#2a2a2a] rounded-[12px] border border-[#3a3a3a]">
                   <div className="text-[#b0b8c1] text-lg mb-2">No event menus yet</div>
-                  <div className="text-sm text-[#b0b8c1] mb-4">Create your first event menu from the shopping cart</div>
-                  {cart.length > 0 && (
-                    <button
-                      onClick={() => {
-                        setShowCreateEventMenu(true);
-                        handleNavClick('menu');
-                      }}
-                      className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[8px] font-semibold hover:bg-[#00B894] transition"
-                    >
-                      Create Event Menu
-                    </button>
-                  )}
+                  <div className="text-sm text-[#b0b8c1] mb-4">Create event menus from the shopping cart side panel</div>
+                  <div className="text-xs text-[#b0b8c1]">Add items to your cart, then click the "📅 Event" button</div>
                 </div>
               )}
 
