@@ -1198,7 +1198,11 @@ def login():
         email = data.get('email', '').strip().lower()
         password = data.get('password', '').strip()
         
-        print(f"Login attempt for email: {email}, DB type: {'PostgreSQL' if is_postgres else 'SQLite'}")
+        database_url_env = os.getenv('DATABASE_URL')
+        print(f"Login attempt for email: {email}")
+        print(f"DATABASE_URL exists: {database_url_env is not None}")
+        print(f"DATABASE_URL starts with postgres: {database_url_env.startswith('postgres') if database_url_env else False}")
+        print(f"DB type: {'PostgreSQL' if is_postgres else 'SQLite'}")
         
         # Find user
         if is_postgres:
