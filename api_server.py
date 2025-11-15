@@ -115,6 +115,63 @@ def get_db_connection():
     
     return conn
 
+def ensure_auth_schema():
+    """Ensure required auth columns exist in the database (idempotent)."""
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        if is_postgres:
+            statements = [
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token VARCHAR(255)",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token_expires TIMESTAMP",
+                "ALTER TABLE event_menus ADD COLUMN IF NOT EXISTS host_name VARCHAR(100)",
+                "ALTER TABLE event_menus ADD COLUMN IF NOT EXISTS read_only BOOLEAN DEFAULT FALSE",
+                "ALTER TABLE event_menus ADD COLUMN IF NOT EXISTS created_by INTEGER REFERENCES users(id)"
+            ]
+            for stmt in statements:
+                try:
+                    cursor.execute(stmt)
+                except Exception as e:
+                    # Ignore duplicate column errors for older PostgreSQL versions without IF NOT EXISTS
+                    if 'already exists' not in str(e).lower():
+                        print(f"ensure_auth_schema postgres warning for '{stmt}': {e}")
+            conn.commit()
+        else:
+            def sqlite_column_exists(table, column):
+                cursor.execute(f"PRAGMA table_info({table})")
+                return any(col[1] == column for col in cursor.fetchall())
+            
+            def sqlite_add_column(table, column, definition):
+                if not sqlite_column_exists(table, column):
+                    try:
+                        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+                        print(f"ensure_auth_schema sqlite: added {column} to {table}")
+                    except Exception as e:
+                        print(f"ensure_auth_schema sqlite warning adding {column} to {table}: {e}")
+            
+            sqlite_add_column('users', 'email_verified', 'INTEGER DEFAULT 0')
+            sqlite_add_column('users', 'verification_token', 'TEXT')
+            sqlite_add_column('users', 'verification_token_expires', 'TIMESTAMP')
+            sqlite_add_column('event_menus', 'host_name', 'TEXT')
+            sqlite_add_column('event_menus', 'read_only', 'INTEGER DEFAULT 0')
+            sqlite_add_column('event_menus', 'created_by', 'INTEGER')
+            conn.commit()
+    except Exception as e:
+        print(f"ensure_auth_schema failed: {e}")
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+# Ensure we have the columns needed for auth/event ownership
+ensure_auth_schema()
+
 # Authentication helper functions
 def get_current_user():
     """Get current logged in user from session"""
@@ -721,6 +778,8 @@ def create_event_menu():
             has_hostname_column = 'host_name' in col_names
             has_created_by_column = 'created_by' in col_names
         
+        print(f"Create event debug → user_id={user_id}, has_created_by={has_created_by_column}, has_host_name={has_hostname_column}, has_read_only={has_readonly_column}, DB={'PostgreSQL' if is_postgres else 'SQLite'}")
+        
         # Build INSERT statement based on available columns
         cols = ['unique_id', 'name', 'description', 'menu_data']
         vals = [unique_id, event_name, event_description, json.dumps(data['menu_data'])]
@@ -769,6 +828,8 @@ def create_event_menu():
         return jsonify(response_data), 201
         
     except Exception as e:
+        print(f"Create event menu error: {e}")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         conn.close()
@@ -1029,6 +1090,7 @@ def list_event_menus():
                     where_clauses.append("created_by = " + ("%s" if is_postgres else "?"))
                     params.append(user['id'])
                 else:
+                    print("list_event_menus warning: created_by column missing, returning empty list")
                     # If created_by column doesn't exist, return empty for security
                     # (we don't want to show events created before auth was added)
                     return jsonify([])
