@@ -18,6 +18,7 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import re
+import traceback
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 
@@ -1118,6 +1119,11 @@ def register():
         username = data.get('username', '').strip()
         password = data.get('password', '').strip()
         
+        print(f"Register attempt - username: {username}, email: {email}")
+        print(f"DATABASE_URL exists: {database_url is not None}")
+        print(f"DATABASE_URL starts with postgres: {database_url.startswith('postgres') if database_url else False}")
+        print(f"DB type: {'PostgreSQL' if is_postgres else 'SQLite'}")
+        
         # Validate inputs
         if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
             return jsonify({'error': 'Invalid email format'}), 400
@@ -1136,6 +1142,7 @@ def register():
             cursor = conn.execute("SELECT id FROM users WHERE email = ? OR username = ?", (email, username))
         
         if cursor.fetchone():
+            print(f"Registration blocked: email or username already exists ({email}, {username})")
             return jsonify({'error': 'Email or username already exists'}), 400
         
         # Create user
@@ -1158,6 +1165,7 @@ def register():
             user_id = cursor.lastrowid
         
         conn.commit()
+        print(f"Registration successful for user_id {user_id} (email: {email})")
         
         # Send verification email (non-blocking - don't fail registration if email fails)
         email_sent = False
@@ -1178,6 +1186,8 @@ def register():
         }), 201
         
     except Exception as e:
+        print(f"Registration error: {e}")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         conn.close()
