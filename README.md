@@ -1,60 +1,49 @@
-# Sushi Website
+# CASSaROLL - Sushi Knowledge Base
 
-A modern React-based sushi restaurant website with menu management, shopping cart, runbook, and ingredient tracking. Features a Solana-inspired UI with teal/purple gradients and a comprehensive data import/export workflow.
+A modern React-based sushi restaurant website with menu management, event creation, shopping cart, runbook, and ingredient tracking. Features a Solana-inspired UI with teal/purple gradients and user authentication.
+
+## 🌐 Live Website
+
+**Production URL**: [https://cassaroll.io](https://cassaroll.io)
+
+The website is deployed on Railway with PostgreSQL database and includes:
+- ✅ Full menu browsing with categorized sushi items
+- ✅ User authentication and email verification
+- ✅ Event menu creation and sharing
+- ✅ Recipe lookup with detailed instructions
+- ✅ Runbook timeline for preparation
+- ✅ Ingredient tracking and shopping lists
+- ✅ Responsive design for all screen sizes
 
 ## 🏗️ File Structure
 
 ```
 sushi-website/
-├── app.js                    # Main React application (1070+ lines)
+├── app.js                    # Main React application
 ├── index.html                # HTML entry point
-├── data/
-│   └── sushi_data.json       # Legacy data file (now served via API)
-├── import-export/            # CSV files for data editing
-│   ├── menu_imports.csv      # Edit menu items here
-│   ├── ingredients_imports.csv # Edit ingredients and costs here
-│   ├── runbook_imports.csv   # Edit preparation timeline here
-│   ├── menu_exports.csv      # Exported menu data
-│   ├── ingredients_exports.csv # Exported ingredients data
-│   ├── runbook_exports.csv   # Exported runbook data
-│   ├── sauce_recipes.csv     # Sauce recipe data
-│   ├── menu.csv              # Original menu data
-│   ├── ingredients.csv       # Original ingredients data
-│   └── runbook.csv           # Original runbook data
-├── pictures/                 # Menu item images
-├── export_json_to_csv.py     # Export JSON to CSV for editing
-├── export_database_to_csv.py # Export database to CSV
-├── convert_imports_to_json.py # Import CSV back to JSON
-├── convert_imports_to_database.py # Import CSV to database
-├── database_schema.sql       # SQLite database schema
-├── postgresql_schema.sql     # PostgreSQL database schema
-├── postgresql_data.sql       # PostgreSQL initial data
-├── init_database.py          # Database initialization script
-├── test_database_connection.py # Database connection test
-├── migrate_to_sqlite.py      # Migration script from JSON to SQLite
-├── migrate_to_postgresql.py  # Migration script to PostgreSQL
 ├── api_server.py             # Flask API server with auto-initialization
-├── requirements.txt          # Python dependencies (including PostgreSQL)
+├── requirements.txt          # Python dependencies
 ├── railway.json              # Railway deployment configuration
-├── sushi.db                  # SQLite database (local development)
+├── postgresql_schema.sql     # PostgreSQL database schema (auto-loaded)
+├── postgresql_data.sql       # PostgreSQL initial data (auto-loaded)
+├── sushi.db                  # SQLite database (local development only)
+├── import-export/            # CSV files (legacy, not actively used)
+│   ├── menu_imports.csv
+│   ├── ingredients_imports.csv
+│   ├── runbook_imports.csv
+│   └── sauce_recipes.csv
+├── pictures/                 # Menu item images
 └── README.md                 # This file
 ```
 
-## 🌐 Live Website
-
-**Production URL**: [https://sushi-website-production.up.railway.app](https://sushi-website-production.up.railway.app)
-
-The website is deployed on Railway with PostgreSQL database and includes:
-- ✅ Full menu browsing with 25+ sushi items
-- ✅ Event menu creation and sharing
-- ✅ Recipe lookup with detailed instructions
-- ✅ Runbook timeline for preparation
-- ✅ Ingredient tracking and shopping lists
-- ✅ Responsive design for all devices
-
 ## 🚀 Running Locally
 
-### Option 1: Database Mode (Recommended)
+### Prerequisites
+- Python 3.8+
+- pip (Python package manager)
+
+### Setup
+
 1. **Install Python dependencies:**
    ```bash
    cd sushi-website
@@ -66,130 +55,77 @@ The website is deployed on Railway with PostgreSQL database and includes:
    python3 api_server.py
    ```
    The API will be available at `http://localhost:5001`
-
-   **Kill the API server:**
-    ```bash
-   $ lsof -ti:5001 | xargs kill -9
-   ```
    
-3. **Start the web server:**
-   ```bash
-   python3 -m http.server 8000
+   **Note**: The server automatically:
+   - Uses SQLite (`sushi.db`) for local development
+   - Initializes the database if it doesn't exist
+   - Serves the React frontend at the root URL
+
+3. **Open in browser:**
+   ```
+   http://localhost:5001
    ```
 
-4. **Open in browser:**
-   ```
-   http://localhost:8000
-   ```
+### Local Development Notes
 
-### Option 2: Legacy JSON Mode
-1. **Start the server:**
-   ```bash
-   cd sushi-website
-   python3 -m http.server 8000
-   ```
+- **Database**: Local development uses SQLite (`sushi.db`). The database is automatically created on first run.
+- **API Endpoints**: Available at `http://localhost:5001/api/`
+- **Frontend**: Automatically detects local vs. production environment
+- **Hot Reload**: Just refresh the browser after making changes
 
-2. **Open in browser:**
-   ```
-   http://localhost:8000
-   ```
-   Note: This mode uses the local `sushi_data.json` file instead of the database.
+## 📊 Data Management
 
-## 📊 Data Management Workflow
+### Production Database (PostgreSQL)
 
-### Export Current Data (for editing)
-```bash
-cd sushi-website
-python3 export_database_to_csv.py
-```
-This creates CSV files in the `import-export/` folder:
-- `import-export/menu_exports.csv`
-- `import-export/ingredients_exports.csv`
-- `import-export/runbook_exports.csv`
+The production database on Railway is managed directly through PostgreSQL:
 
-### Edit Data
-1. Rename exported files to have `_imports` suffix:
-   - `menu_exports.csv` → `menu_imports.csv`
-   - `ingredients_exports.csv` → `ingredients_imports.csv`
-   - `runbook_exports.csv` → `runbook_imports.csv`
+1. **Connect to Railway PostgreSQL:**
+   - Use Railway's PostgreSQL console
+   - Or connect via `psql` with the connection string from Railway dashboard
 
-2. Edit the CSV files in your preferred editor (Excel, Google Sheets, etc.)
+2. **Edit Data:**
+   - Edit data directly in PostgreSQL using SQL commands
+   - Or use a PostgreSQL GUI tool (pgAdmin, DBeaver, etc.)
 
-### Import Edited Data
-```bash
-cd sushi-website
-python3 convert_imports_to_database.py
-```
-This reads the `_imports` files and updates the SQLite database directly.
+3. **Schema Updates:**
+   - The `api_server.py` automatically handles schema migrations on startup
+   - New columns are added via `ensure_auth_schema()` function
 
-#### Selective Import Options
-You can import only specific types of data using command-line options:
+### Local Database (SQLite)
 
-- Import only the menu:
-  ```bash
-  python3 convert_imports_to_database.py --menu
-  ```
-- Import only the ingredients:
-  ```bash
-  python3 convert_imports_to_database.py --ingredients
-  ```
-- Import only the runbook:
-  ```bash
-  python3 convert_imports_to_database.py --runbook
-  ```
-- Import menu and runbook only:
-  ```bash
-  python3 convert_imports_to_database.py --menu --runbook
-  ```
-
-**Note**: If you run the script with **no arguments**, it will import all three files (menu, ingredients, and runbook).
-
-### Legacy JSON Workflow (Deprecated)
-The old JSON-based workflow is still available but not recommended:
-- `export_json_to_csv.py` - Export from legacy JSON
-- `convert_imports_to_json.py` - Import to legacy JSON
+For local development, the SQLite database (`sushi.db`) can be edited using:
+- SQLite command-line tool
+- SQLite browser GUI
+- Direct SQL commands
 
 ## 🎨 Features
 
 ### Core Functionality
-- **Menu Management**: Browse and filter sushi menu items by category
-- **Shopping Cart**: Add items with quantity selection (1-5), view cart summary
-- **Shopping Cart Page**: Dedicated page with item removal, total pricing, and print/export functionality
+- **Menu Management**: Browse and filter sushi menu items by category (Appetizer, Nigiri, Maki Rolls, Speciality Rolls)
+- **Shopping Cart**: Add items with quantity selection (1-5), view cart in table format
+- **Event Menus**: Create, share, and manage event menus with unique shareable links
+- **User Accounts**: Registration, login, email verification, and event ownership
 - **Ingredient Tracking**: Automatic ingredient list generation for cart items
 - **Runbook**: Interactive timeline for sushi preparation with filtering and tips
-- **Shopping Items**: Complete ingredient list with costs and store information
+- **Shopping List**: Complete ingredient list with costs and store information
+- **Recipes**: Detailed recipe cards with ingredients, instructions, and difficulty ratings
 
 ### UI/UX Features
 - **Solana-inspired Design**: Modern teal/purple gradient color scheme
-- **Responsive Layout**: Optimized for desktop and mobile viewing
+- **Responsive Layout**: Optimized for desktop, tablet, and mobile viewing
 - **Collapsible Categories**: Menu items grouped by category with sticky headers
-- **Detail Drawer**: Right-side panel showing item details and ingredients
-- **Floating Cart Summary**: Always-visible cart summary in top-left corner
-- **Print-Friendly Views**: Optimized printing for shopping lists and cart contents
-- **Copy to Clipboard**: Easy export of ingredient lists to notes apps
+- **Side Panels**: Shopping cart and runbook tips in expandable side panels
+- **Event Detail Pages**: Beautiful spreadsheet-style event menu display
+- **My Events Hub**: Manage all your event menus in one place
 
-### Navigation
-- **Left Sidebar**: Main navigation with Menu, Runbook, Shopping Items, and Cart
-- **Sticky Headers**: Category headers that stay visible while scrolling
-- **Cart Access**: Click cart summary to access full shopping cart page
+## 🔧 Technical Stack
 
-## 📁 Data Structure
-
-### Menu Items
-Each menu item includes:
-- Name, description, price, category
-- Ingredient list with quantities
-- Image reference (if available)
-
-### Ingredients
-Each ingredient includes:
-- Name, store, category, cost per unit
-- Standardized naming (e.g., "Kani (Imitation Crab)", Maguro (Tuna)")
-
-### Runbook
-Each runbook item includes:
-- Step description, time, category
-- Tips and notes for preparation
+- **Frontend**: React (via CDN), Tailwind CSS, Vanilla JavaScript
+- **Backend**: Flask API server with automatic database initialization
+- **Database**: PostgreSQL (production) / SQLite (local development)
+- **Authentication**: Flask sessions with email verification via Resend API
+- **Deployment**: Railway with automatic GitHub integration
+- **Email**: Resend API for email verification
 
 ## 🚀 Deployment (Railway)
 
@@ -201,52 +137,101 @@ The website is deployed on [Railway](https://railway.app) with the following set
 - **Database**: PostgreSQL (production) / SQLite (local development)
 - **Hosting**: Railway with automatic deployments from GitHub
 
-### Deployment Files
-- `railway.json` - Railway deployment configuration
-- `requirements.txt` - Python dependencies including `psycopg2-binary` for PostgreSQL
-- `postgresql_schema.sql` - Database schema for PostgreSQL
-- `postgresql_data.sql` - Initial data for PostgreSQL
-- `init_database.py` - Database initialization script
-
 ### Environment Variables (Railway)
+
+Required environment variables:
 - `DATABASE_URL` - PostgreSQL connection string (automatically set by Railway)
+- `SECRET_KEY` - Flask session secret key (auto-generated if not set)
+- `MAIL_SERVER` - Email server (e.g., `smtp.resend.com`)
+- `MAIL_PORT` - Email port (e.g., `587`)
+- `MAIL_USE_TLS` - Use TLS (`True` for port 587)
+- `MAIL_USERNAME` - Email username (Resend API key)
+- `MAIL_PASSWORD` - Email password (Resend API key)
+- `MAIL_DEFAULT_SENDER` - Sender email address
+- `BASE_URL` - Base URL for email links (e.g., `https://cassaroll.io`)
 
 ### Automatic Features
 - **Database Initialization**: App automatically creates tables and imports data on first startup
+- **Schema Migrations**: Auth schema columns are automatically added if missing
 - **Dynamic API URLs**: Frontend automatically detects local vs. production environment
 - **Rate Limiting**: API endpoints protected with Flask-Limiter
 - **CORS**: Configured for cross-origin requests
 
 ### Custom Domain Setup
-To connect your custom domain (e.g., `cassaroll.io`):
-1. Add custom domain in Railway dashboard
-2. Update DNS records in GoDaddy to point to Railway
+The site uses a custom domain (`cassaroll.io`):
+1. Custom domain configured in Railway dashboard
+2. DNS records point to Railway
 3. SSL certificate automatically provisioned
-
-## 🔧 Technical Stack
-
-- **Frontend**: React (via CDN), Tailwind CSS, Vanilla JavaScript
-- **Backend**: Flask API server, Python for data processing
-- **Database**: PostgreSQL (production) / SQLite (local development)
-- **Data Format**: JSON for runtime, CSV for editing, SQL for database
-- **Server**: Python HTTP server (no build process required)
-- **Deployment**: Railway with automatic GitHub integration
-
-## 🚀 Quick Start
-
-1. Clone or download the project
-2. Navigate to the `sushi-website` directory
-3. Install dependencies: `pip3 install -r requirements.txt`
-4. Start the API server: `python3 api_server.py` (runs on port 5001)
-5. Start the web server: `python3 -m http.server 8000`
-6. Open `http://localhost:8000` in your browser
-7. Start browsing the menu and adding items to your cart!
 
 ## 📝 Development Notes
 
-- All data editing is done through CSV files in the `import-export/` folder
-- The main `sushi_data.json` file is auto-generated and should not be edited directly
-- The website automatically loads the latest data on page refresh
-- No build process or compilation required - just edit files and refresh!
-- The database is automatically populated from the JSON data during migration
-- API endpoints are available at `http://localhost:5001/api/` for programmatic access 
+- **No Build Process**: Just edit files and refresh the browser
+- **Database Auto-Init**: Database schema and data are automatically loaded on first startup
+- **Schema Migrations**: Auth-related columns are automatically added via `ensure_auth_schema()`
+- **API Endpoints**: Available at `/api/*` for programmatic access
+- **Static Files**: Served directly by Flask from the root directory
+
+## 🔐 Authentication
+
+The site includes user authentication with:
+- User registration with email verification
+- Login/logout functionality
+- Event ownership (users can only see/edit their own events)
+- Admin role support (for future admin features)
+- Email verification via Resend API
+
+## 📚 API Endpoints
+
+### Menu & Data
+- `GET /api/menu` - Get all menu items
+- `GET /api/menu/<id>` - Get specific menu item
+- `GET /api/ingredients` - Get all ingredients
+- `GET /api/runbook` - Get runbook items
+- `GET /api/categories` - Get categories
+- `GET /api/recipes` - Get all recipes
+- `GET /api/recipes/<id>` - Get specific recipe
+
+### Events
+- `GET /api/event-menus` - List all event menus (user's own)
+- `GET /api/event-menus/<id>` - Get specific event menu
+- `POST /api/event-menus` - Create event menu (requires auth)
+- `PUT /api/event-menus/<id>` - Update event menu (requires auth)
+- `DELETE /api/event-menus/<id>` - Delete event menu (requires auth)
+
+### Authentication
+- `POST /api/register` - Register new user
+- `POST /api/login` - Login user
+- `POST /api/logout` - Logout user
+- `GET /api/me` - Get current user info
+- `GET /api/verify-email/<token>` - Verify email address
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **Database Connection Errors**:
+   - Local: Ensure `sushi.db` file exists or let the server create it
+   - Production: Verify `DATABASE_URL` environment variable in Railway
+
+2. **Email Not Sending**:
+   - Check Resend API credentials in environment variables
+   - Verify `MAIL_SERVER`, `MAIL_PORT`, and `MAIL_USE_TLS` settings
+   - Check Railway logs for email sending errors
+
+3. **API Not Responding**:
+   - Verify port configuration (default: 5001)
+   - Check Railway service logs
+   - Ensure all environment variables are set
+
+4. **Frontend Not Loading**:
+   - Clear browser cache
+   - Check browser console for errors
+   - Verify API server is running
+
+### Support
+- Railway Documentation: https://docs.railway.app
+- Railway Community: https://railway.app/discord
+
+## 📄 License
+
+This project is private and proprietary.
