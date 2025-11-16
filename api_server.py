@@ -242,10 +242,14 @@ def require_admin(f):
 
 def send_verification_email(email, verification_token):
     """Send email verification link"""
+    print(f"[EMAIL] Attempting to send verification email to {email}")
+    
     # Check if email is configured
     if not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD'):
-        print("Email not configured (MAIL_USERNAME/MAIL_PASSWORD not set)")
+        print("[EMAIL] Email not configured (MAIL_USERNAME/MAIL_PASSWORD not set)")
         return False
+    
+    print(f"[EMAIL] Config: server={app.config.get('MAIL_SERVER')}, port={app.config.get('MAIL_PORT')}, use_tls={app.config.get('MAIL_USE_TLS')}, use_ssl={app.config.get('MAIL_USE_SSL')}")
     
     try:
         # Use frontend URL for verification link
@@ -253,9 +257,12 @@ def send_verification_email(email, verification_token):
         if 'localhost' in base_url:
             base_url = 'http://localhost:5001'
         verify_url = f"{base_url}/verify-email/{verification_token}"
+        
+        print(f"[EMAIL] Creating message for {email}")
         msg = Message(
             'Verify your CASSaROLL account',
             recipients=[email],
+            sender=app.config.get('MAIL_DEFAULT_SENDER'),
             html=f"""
             <h2>Welcome to CASSaROLL!</h2>
             <p>Please verify your email address by clicking the link below:</p>
@@ -263,11 +270,15 @@ def send_verification_email(email, verification_token):
             <p>This link will expire in 24 hours.</p>
             """
         )
+        
+        print(f"[EMAIL] Sending message via mail.send()...")
         mail.send(msg)
-        print(f"Verification email sent to {email}")
+        print(f"[EMAIL] ✅ Verification email sent successfully to {email}")
         return True
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        print(f"[EMAIL] ❌ Failed to send email to {email}: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def migrate_readonly_column():
@@ -1328,10 +1339,11 @@ def register():
                     # Push application context for Flask-Mail
                     with app.app_context():
                         try:
+                            print(f"[EMAIL] Background thread started for {email}")
                             result = send_verification_email(email, verification_token)
-                            print(f"Email send result (async): {result}")
+                            print(f"[EMAIL] Background thread result for {email}: {result}")
                         except Exception as e:
-                            print(f"Email sending failed in background (non-critical): {e}")
+                            print(f"[EMAIL] ❌ Background thread exception for {email}: {e}")
                             import traceback
                             traceback.print_exc()
                 
