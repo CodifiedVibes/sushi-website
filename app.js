@@ -1614,81 +1614,101 @@ function App() {
                   </div>
                 </div>
 
-                {/* Menu Items */}
+                {/* Menu Items - Spreadsheet Style */}
                 {cart.length > 0 && (
                   <div className="mb-8">
                     <h2 className="text-2xl font-semibold text-[#00D4AA] mb-4">Menu Items</h2>
-                    <div className="space-y-4">
-                      {cart.map((item, idx) => {
-                        const itemData = typeof item === 'object' && item !== null ? item : null;
-                        if (!itemData) return null;
-                        
-                        const qty = itemData.quantity || 1;
-                        const inside = Array.isArray(itemData.ingredients_inside) 
-                          ? itemData.ingredients_inside 
-                          : (itemData.ingredients_inside ? [itemData.ingredients_inside] : []);
-                        const onTop = Array.isArray(itemData.ingredients_on_top)
-                          ? itemData.ingredients_on_top
-                          : (itemData.ingredients_on_top ? [itemData.ingredients_on_top] : []);
-                        
-                        return (
-                          <div key={idx} className="bg-[#2a2a2a] rounded-[12px] p-4 border border-[#3a3a3a]">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <h3 className="text-xl font-semibold text-white">{itemData.name}</h3>
-                                  {qty > 1 && (
-                                    <span className="bg-[#00D4AA] text-[#1a1a1a] px-2 py-1 rounded text-sm font-semibold">
-                                      ×{qty}
-                                    </span>
-                                  )}
-                                  {itemData.price && (
-                                    <span className="text-[#b0b8c1]">${parseFloat(itemData.price).toFixed(2)}</span>
-                                  )}
-                                </div>
-                                {itemData.description && (
-                                  <p className="text-sm text-[#b0b8c1] mb-3">{itemData.description}</p>
-                                )}
-                                {itemData.category && (
-                                  <span className="inline-block bg-[#3a3a3a] text-[#b0b8c1] px-2 py-1 rounded text-xs mb-3">
-                                    {itemData.category}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {/* Ingredients */}
-                            {(inside.length > 0 || onTop.length > 0) && (
-                              <div className="mt-3 pt-3 border-t border-[#3a3a3a]">
-                                {inside.length > 0 && (
-                                  <div className="mb-2">
-                                    <span className="text-xs text-[#00D4AA] font-semibold">Inside:</span>
-                                    <div className="flex flex-wrap gap-2 mt-1">
-                                      {inside.map((ing, i) => (
-                                        <span key={i} className="bg-[#3a3a3a] text-[#b0b8c1] px-2 py-1 rounded text-xs">
-                                          {ing}
+                    <div className="bg-[#2a2a2a] rounded-[12px] border border-[#3a3a3a] overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-[#3a3a3a] border-b border-[#4a4a4a]">
+                              <th className="px-4 py-3 text-left text-[#00D4AA] font-semibold whitespace-nowrap">Item</th>
+                              <th className="px-4 py-3 text-left text-[#00D4AA] font-semibold">Inside</th>
+                              <th className="px-4 py-3 text-left text-[#00D4AA] font-semibold">On Top</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {cart.map((item, idx) => {
+                              const itemData = typeof item === 'object' && item !== null ? item : null;
+                              if (!itemData) return null;
+                              
+                              const qty = itemData.quantity || 1;
+                              const inside = Array.isArray(itemData.ingredients_inside) 
+                                ? itemData.ingredients_inside 
+                                : (itemData.ingredients_inside ? [String(itemData.ingredients_inside)] : []);
+                              const onTop = Array.isArray(itemData.ingredients_on_top)
+                                ? itemData.ingredients_on_top
+                                : (itemData.ingredients_on_top ? [String(itemData.ingredients_on_top)] : []);
+                              
+                              // Get category abbreviation
+                              const getCategoryBadge = (category) => {
+                                if (!category) return '';
+                                const catLower = category.toLowerCase();
+                                if (catLower.includes('maki')) return 'Maki';
+                                if (catLower.includes('nigiri')) return 'Nigiri';
+                                if (catLower.includes('special')) return 'Special';
+                                if (catLower.includes('appetizer')) return 'App';
+                                return category.split(' ')[0];
+                              };
+                              
+                              const categoryBadge = getCategoryBadge(itemData.category);
+                              
+                              return (
+                                <tr key={idx} className="border-b border-[#3a3a3a] hover:bg-[#323232] transition">
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-white font-medium">{itemData.name}</span>
+                                      {categoryBadge && (
+                                        <span className="text-xs text-[#b0b8c1] bg-[#3a3a3a] px-2 py-0.5 rounded">
+                                          {categoryBadge}
                                         </span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                                {onTop.length > 0 && (
-                                  <div>
-                                    <span className="text-xs text-[#00D4AA] font-semibold">On Top:</span>
-                                    <div className="flex flex-wrap gap-2 mt-1">
-                                      {onTop.map((ing, i) => (
-                                        <span key={i} className="bg-[#3a3a3a] text-[#b0b8c1] px-2 py-1 rounded text-xs">
-                                          {ing}
+                                      )}
+                                      {qty > 1 && (
+                                        <span className="text-xs text-[#00D4AA] bg-[#1a3a2a] px-1.5 py-0.5 rounded">
+                                          ×{qty}
                                         </span>
-                                      ))}
+                                      )}
                                     </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {inside.length > 0 ? (
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {inside.map((ing, i) => (
+                                          <span 
+                                            key={i} 
+                                            className="inline-block bg-[#3a3a3a] text-[#b0b8c1] px-2 py-0.5 rounded text-xs whitespace-nowrap"
+                                          >
+                                            {String(ing)}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-[#4a4a4a] text-xs">—</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {onTop.length > 0 ? (
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {onTop.map((ing, i) => (
+                                          <span 
+                                            key={i} 
+                                            className="inline-block bg-[#3a3a3a] text-[#b0b8c1] px-2 py-0.5 rounded text-xs whitespace-nowrap"
+                                          >
+                                            {String(ing)}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-[#4a4a4a] text-xs">—</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 )}
