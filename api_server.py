@@ -273,39 +273,62 @@ def send_verification_email(email, verification_token):
             """
         )
         
-        print(f"[EMAIL] Sending message via mail.send()...")
-        # Test SMTP connection first with detailed logging
+        # Test SMTP connection first with detailed logging BEFORE attempting to send
+        print(f"[EMAIL] Step 1: Testing SMTP connection to {app.config.get('MAIL_SERVER')}:{app.config.get('MAIL_PORT')}...")
+        import sys
+        sys.stdout.flush()  # Force flush to ensure logs appear
+        
         try:
             import smtplib
-            print(f"[EMAIL] Testing SMTP connection to {app.config.get('MAIL_SERVER')}:{app.config.get('MAIL_PORT')}...")
+            print(f"[EMAIL] Step 2: Imported smtplib")
+            sys.stdout.flush()
+            
+            mail_server = app.config.get('MAIL_SERVER')
+            mail_port = app.config.get('MAIL_PORT')
+            print(f"[EMAIL] Step 3: Connecting to {mail_server}:{mail_port} (SSL={app.config.get('MAIL_USE_SSL')}, TLS={app.config.get('MAIL_USE_TLS')})")
+            sys.stdout.flush()
             
             # Create SMTP connection with timeout
             if app.config.get('MAIL_USE_SSL'):
-                print(f"[EMAIL] Using SMTP_SSL (SSL)")
-                test_smtp = smtplib.SMTP_SSL(app.config.get('MAIL_SERVER'), app.config.get('MAIL_PORT'), timeout=5)
+                print(f"[EMAIL] Step 4: Using SMTP_SSL (SSL)")
+                sys.stdout.flush()
+                test_smtp = smtplib.SMTP_SSL(mail_server, mail_port, timeout=5)
             else:
-                print(f"[EMAIL] Using SMTP (will STARTTLS if needed)")
-                test_smtp = smtplib.SMTP(app.config.get('MAIL_SERVER'), app.config.get('MAIL_PORT'), timeout=5)
+                print(f"[EMAIL] Step 4: Using SMTP (will STARTTLS if needed)")
+                sys.stdout.flush()
+                test_smtp = smtplib.SMTP(mail_server, mail_port, timeout=5)
             
-            print(f"[EMAIL] SMTP connection established")
+            print(f"[EMAIL] Step 5: ✅ SMTP connection established")
+            sys.stdout.flush()
             
             # Start TLS if needed
             if app.config.get('MAIL_USE_TLS') and not app.config.get('MAIL_USE_SSL'):
-                print(f"[EMAIL] Starting TLS...")
+                print(f"[EMAIL] Step 6: Starting TLS...")
+                sys.stdout.flush()
                 test_smtp.starttls()
-                print(f"[EMAIL] TLS started")
+                print(f"[EMAIL] Step 7: ✅ TLS started")
+                sys.stdout.flush()
             
             # Test login
-            print(f"[EMAIL] Attempting login with username: {app.config.get('MAIL_USERNAME')}")
-            test_smtp.login(app.config.get('MAIL_USERNAME'), app.config.get('MAIL_PASSWORD'))
-            print(f"[EMAIL] ✅ SMTP authentication successful")
+            mail_username = app.config.get('MAIL_USERNAME')
+            print(f"[EMAIL] Step 8: Attempting login with username: {mail_username}")
+            sys.stdout.flush()
+            test_smtp.login(mail_username, app.config.get('MAIL_PASSWORD'))
+            print(f"[EMAIL] Step 9: ✅ SMTP authentication successful")
+            sys.stdout.flush()
             test_smtp.quit()
+            print(f"[EMAIL] Step 10: ✅ SMTP connection closed successfully")
+            sys.stdout.flush()
             
         except Exception as e:
-            print(f"[EMAIL] ❌ SMTP connection test failed: {e}")
+            print(f"[EMAIL] ❌ SMTP connection test failed at step: {e}")
             import traceback
             traceback.print_exc()
+            sys.stdout.flush()
             return False
+        
+        print(f"[EMAIL] Step 11: SMTP test passed, now attempting to send via Flask-Mail...")
+        sys.stdout.flush()
         
         # Use threading-based timeout for email sending (works in Flask's threaded environment)
         import threading
