@@ -18,6 +18,7 @@ const NAV_OPTIONS = [
   // { label: 'Shopping Items', key: 'shopping_items' }, // temporarily hidden
   { label: 'Shopping List', key: 'shopping_list' },
   { label: 'Recipes', key: 'recipes' },
+  { label: 'My Events', key: 'my-events' },
 ];
 
 const COLORS = {
@@ -835,9 +836,9 @@ function App() {
     }
   };
 
-  // Load event menus when on cart page
+  // Load event menus when on cart page or my-events page
   useEffect(() => {
-    if (activeNav === 'cart' && currentUser && currentUser.email_verified) {
+    if ((activeNav === 'cart' || activeNav === 'my-events') && currentUser && currentUser.email_verified) {
       const loadMenus = async () => {
         setEventMenusLoading(true);
         try {
@@ -851,7 +852,7 @@ function App() {
         }
       };
       loadMenus();
-    } else if (activeNav === 'cart' && (!currentUser || !currentUser.email_verified)) {
+    } else if ((activeNav === 'cart' || activeNav === 'my-events') && (!currentUser || !currentUser.email_verified)) {
       setEventMenus([]);
       setEventMenusLoading(false);
     }
@@ -1623,6 +1624,7 @@ function App() {
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="bg-[#3a3a3a] border-b border-[#4a4a4a]">
+                              <th className="px-4 py-3 text-left text-[#00D4AA] font-semibold whitespace-nowrap">Category</th>
                               <th className="px-4 py-3 text-left text-[#00D4AA] font-semibold whitespace-nowrap">Item</th>
                               <th className="px-4 py-3 text-left text-[#00D4AA] font-semibold">Inside</th>
                               <th className="px-4 py-3 text-left text-[#00D4AA] font-semibold">On Top</th>
@@ -1641,9 +1643,18 @@ function App() {
                                 ? itemData.ingredients_on_top
                                 : (itemData.ingredients_on_top ? [String(itemData.ingredients_on_top)] : []);
                               
+                              // Category colors matching menu page
+                              const categoryColors = {
+                                'Appetizer': '#FF69B4',
+                                'Nigiri': '#9945FF',
+                                'Maki Rolls': '#3B82F6',
+                                'Speciality Rolls': '#00D4AA'
+                              };
+                              const categoryColor = categoryColors[itemData.category] || '#b0b8c1';
+                              
                               // Get category abbreviation
                               const getCategoryBadge = (category) => {
-                                if (!category) return '';
+                                if (!category) return 'Other';
                                 const catLower = category.toLowerCase();
                                 if (catLower.includes('maki')) return 'Maki';
                                 if (catLower.includes('nigiri')) return 'Nigiri';
@@ -1657,13 +1668,13 @@ function App() {
                               return (
                                 <tr key={idx} className="border-b border-[#3a3a3a] hover:bg-[#323232] transition">
                                   <td className="px-4 py-3">
+                                    <span className="text-xs font-semibold whitespace-nowrap" style={{ color: categoryColor }}>
+                                      {categoryBadge}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
                                     <div className="flex items-center gap-2">
                                       <span className="text-white font-medium">{itemData.name}</span>
-                                      {categoryBadge && (
-                                        <span className="text-xs text-[#b0b8c1] bg-[#3a3a3a] px-2 py-0.5 rounded">
-                                          {categoryBadge}
-                                        </span>
-                                      )}
                                       {qty > 1 && (
                                         <span className="text-xs text-[#00D4AA] bg-[#1a3a2a] px-1.5 py-0.5 rounded">
                                           ×{qty}
@@ -1710,35 +1721,6 @@ function App() {
                         </table>
                       </div>
                     </div>
-                  </div>
-                )}
-
-                {/* Ingredients Summary */}
-                {cart.length > 0 && (
-                  <div>
-                    <h2 className="text-2xl font-semibold text-[#00D4AA] mb-4">Shopping List</h2>
-                    {(() => {
-                      const { grouped, sortedCats } = getCartIngredientsSummary(cart, ingredients);
-                      return (
-                        <div className="space-y-4">
-                          {sortedCats.map(cat => (
-                            <div key={cat} className="bg-[#2a2a2a] rounded-[12px] p-4 border border-[#3a3a3a]">
-                              <h3 className="text-lg font-semibold text-[#00D4AA] mb-3">{cat}</h3>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                {grouped[cat].map((ing, idx) => (
-                                  <div key={idx} className="flex items-center justify-between py-1">
-                                    <span className="text-white">{ing.name}</span>
-                                    <span className="text-[#00D4AA] font-semibold">
-                                      {ing.totalQty > 1 ? `${ing.totalQty}x` : ''}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
                   </div>
                 )}
 
@@ -2292,6 +2274,145 @@ function App() {
           </div>
         </section>
       )}
+
+      {/* My Events Page */}
+      {activeNav === 'my-events' && (
+        <section id="my-events" className="w-full py-10 px-4">
+          <div className="w-full max-w-6xl lg:max-w-7xl xl:max-w-[1600px] mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-semibold text-[#00D4AA]">My Events</h2>
+              <div className="flex items-center gap-2 bg-[#2a2a2a] rounded-[8px] p-1">
+                <button
+                  onClick={() => setEventMenuViewMode('grid')}
+                  className={`px-3 py-1 rounded-[6px] text-sm transition ${eventMenuViewMode === 'grid' ? 'bg-[#00D4AA] text-[#1a1a1a]' : 'text-[#b0b8c1] hover:text-white'}`}
+                  title="Grid View"
+                >
+                  ▦ Grid
+                </button>
+                <button
+                  onClick={() => setEventMenuViewMode('list')}
+                  className={`px-3 py-1 rounded-[6px] text-sm transition ${eventMenuViewMode === 'list' ? 'bg-[#00D4AA] text-[#1a1a1a]' : 'text-[#b0b8c1] hover:text-white'}`}
+                  title="List View"
+                >
+                  ☰ List
+                </button>
+              </div>
+            </div>
+
+            {/* Loading State */}
+            {eventMenusLoading && (
+              <div className="text-center py-12">
+                <div className="text-[#00D4AA]">Loading event menus...</div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!eventMenusLoading && eventMenus.length === 0 && (
+              <div className="text-center py-12 bg-[#2a2a2a] rounded-[12px] border border-[#3a3a3a]">
+                {!currentUser ? (
+                  <>
+                    <div className="text-[#b0b8c1] text-lg mb-2">Please login to view your event menus</div>
+                    <button
+                      onClick={() => setShowLoginModal(true)}
+                      className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[8px] font-semibold hover:bg-[#00B894] transition mt-4"
+                    >
+                      Login
+                    </button>
+                  </>
+                ) : !currentUser.email_verified ? (
+                  <>
+                    <div className="text-[#b0b8c1] text-lg mb-2">Please verify your email</div>
+                    <div className="text-sm text-[#b0b8c1] mb-4">Check your email for a verification link</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-[#b0b8c1] text-lg mb-2">No event menus yet</div>
+                    <div className="text-sm text-[#b0b8c1] mb-4">Create event menus from the shopping cart side panel</div>
+                    <div className="text-xs text-[#b0b8c1]">Add items to your cart, then click the "📅 Event" button</div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Event Menus Grid/List */}
+            {!eventMenusLoading && eventMenus.length > 0 && (
+              <div className={eventMenuViewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-4'}>
+                {eventMenus.map((menu) => {
+                  const menuData = typeof menu.menu_data === 'string' ? JSON.parse(menu.menu_data) : menu.menu_data;
+                  const itemCount = menuData?.length || 0;
+                  const shareUrl = `${window.location.origin}/event/${menu.unique_id}`;
+                  
+                  return (
+                    <div key={menu.unique_id || menu.id} className="bg-[#2a2a2a] rounded-[12px] p-4 border border-[#3a3a3a] hover:border-[#00D4AA] transition cursor-pointer"
+                      onClick={() => {
+                        window.location.href = `/event/${menu.unique_id}`;
+                      }}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-white mb-1">{menu.name}</h3>
+                          {menu.host_name && (
+                            <div className="text-sm text-[#b0b8c1] mb-2">Host: {menu.host_name}</div>
+                          )}
+                          {menu.description && (
+                            <div className="text-sm text-[#b0b8c1] mb-2">{menu.description}</div>
+                          )}
+                          <div className="flex items-center gap-4 text-xs text-[#b0b8c1]">
+                            <span>{itemCount} item{itemCount !== 1 ? 's' : ''}</span>
+                            {menu.created_at && (
+                              <span>{new Date(menu.created_at).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={async () => {
+                            window.location.href = `/event/${menu.unique_id}`;
+                          }}
+                          className="flex-1 bg-[#00D4AA] text-[#1a1a1a] px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#00B894] transition"
+                          title="View event"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(shareUrl);
+                            alert('Share link copied to clipboard!');
+                          }}
+                          className="flex-1 bg-[#3a3a3a] text-white px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#4a4a4a] transition"
+                          title="Copy share link"
+                        >
+                          Share
+                        </button>
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (confirm(`Delete "${menu.name}"? This cannot be undone.`)) {
+                              try {
+                                await deleteEventMenu(menu.unique_id);
+                                setEventMenus(eventMenus.filter(m => m.unique_id !== menu.unique_id));
+                              } catch (error) {
+                                alert('Failed to delete event menu');
+                              }
+                            }
+                          }}
+                          className="bg-[#dc2626] text-white px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#b91c1c] transition"
+                          title="Delete menu"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Shopping Cart Expand Button (when minimized) */}
       {activeNav === 'menu' && !showShoppingCart && (
         <button
