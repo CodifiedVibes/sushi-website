@@ -1686,6 +1686,47 @@ def set_admin():
     finally:
         conn.close()
 
+@app.route('/api/admin/load-data', methods=['POST'])
+def load_data_endpoint():
+    """One-time endpoint to load data from CSV files into PostgreSQL (no auth required for initial setup)"""
+    try:
+        # Import and run the data loader
+        import load_data_to_postgres
+        import io
+        import sys
+        
+        # Capture stdout
+        old_stdout = sys.stdout
+        sys.stdout = captured_output = io.StringIO()
+        
+        try:
+            # Run the main function
+            load_data_to_postgres.main()
+            output = captured_output.getvalue()
+            sys.stdout = old_stdout
+            
+            return jsonify({
+                'message': 'Data loaded successfully',
+                'output': output
+            }), 200
+        except Exception as e:
+            sys.stdout = old_stdout
+            output = captured_output.getvalue()
+            import traceback
+            error_trace = traceback.format_exc()
+            return jsonify({
+                'error': str(e),
+                'output': output,
+                'traceback': error_trace
+            }), 500
+            
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
