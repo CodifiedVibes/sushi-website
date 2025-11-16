@@ -243,15 +243,20 @@ def require_admin(f):
     return wrapper
 
 def send_verification_email(email, verification_token):
-    """Send email verification link"""
+    """Send email verification link using Resend API (not SMTP, since Railway blocks SMTP)"""
     print(f"[EMAIL] Attempting to send verification email to {email}")
     
-    # Check if email is configured
-    if not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD'):
-        print("[EMAIL] Email not configured (MAIL_USERNAME/MAIL_PASSWORD not set)")
+    # Check if email is configured - use MAIL_PASSWORD as Resend API key
+    api_key = app.config.get('MAIL_PASSWORD') or os.getenv('RESEND_API_KEY')
+    sender_email = app.config.get('MAIL_DEFAULT_SENDER') or app.config.get('MAIL_USERNAME')
+    
+    if not api_key:
+        print("[EMAIL] Email not configured (RESEND_API_KEY or MAIL_PASSWORD not set)")
         return False
     
-    print(f"[EMAIL] Config: server={app.config.get('MAIL_SERVER')}, port={app.config.get('MAIL_PORT')}, use_tls={app.config.get('MAIL_USE_TLS')}, use_ssl={app.config.get('MAIL_USE_SSL')}")
+    if not sender_email:
+        print("[EMAIL] Sender email not configured (MAIL_DEFAULT_SENDER or MAIL_USERNAME not set)")
+        return False
     
     try:
         # Use frontend URL for verification link
@@ -260,108 +265,51 @@ def send_verification_email(email, verification_token):
             base_url = 'http://localhost:5001'
         verify_url = f"{base_url}/verify-email/{verification_token}"
         
-        print(f"[EMAIL] Creating message for {email}")
-        msg = Message(
-            'Verify your CASSaROLL account',
-            recipients=[email],
-            sender=app.config.get('MAIL_DEFAULT_SENDER'),
-            html=f"""
+        print(f"[EMAIL] Using Resend API (Railway blocks SMTP)")
+        print(f"[EMAIL] From: {sender_email}, To: {email}")
+        
+        # Use Resend REST API instead of SMTP
+        import requests
+        
+        api_url = "https://api.resend.com/emails"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "from": sender_email,
+            "to": [email],
+            "subject": "Verify your CASSaROLL account",
+            "html": f"""
             <h2>Welcome to CASSaROLL!</h2>
             <p>Please verify your email address by clicking the link below:</p>
             <p><a href="{verify_url}">{verify_url}</a></p>
             <p>This link will expire in 24 hours.</p>
             """
-        )
+        }
         
-        # Test SMTP connection first with detailed logging BEFORE attempting to send
-        print(f"[EMAIL] Step 1: Testing SMTP connection to {app.config.get('MAIL_SERVER')}:{app.config.get('MAIL_PORT')}...")
-        import sys
-        sys.stdout.flush()  # Force flush to ensure logs appear
+        print(f"[EMAIL] Sending POST request to Resend API...")
+        response = requests.post(api_url, json=payload, headers=headers, timeout=10)
         
-        try:
-            import smtplib
-            print(f"[EMAIL] Step 2: Imported smtplib")
-            sys.stdout.flush()
-            
-            mail_server = app.config.get('MAIL_SERVER')
-            mail_port = app.config.get('MAIL_PORT')
-            print(f"[EMAIL] Step 3: Connecting to {mail_server}:{mail_port} (SSL={app.config.get('MAIL_USE_SSL')}, TLS={app.config.get('MAIL_USE_TLS')})")
-            sys.stdout.flush()
-            
-            # Create SMTP connection with timeout
-            if app.config.get('MAIL_USE_SSL'):
-                print(f"[EMAIL] Step 4: Using SMTP_SSL (SSL)")
-                sys.stdout.flush()
-                test_smtp = smtplib.SMTP_SSL(mail_server, mail_port, timeout=5)
-            else:
-                print(f"[EMAIL] Step 4: Using SMTP (will STARTTLS if needed)")
-                sys.stdout.flush()
-                test_smtp = smtplib.SMTP(mail_server, mail_port, timeout=5)
-            
-            print(f"[EMAIL] Step 5: ✅ SMTP connection established")
-            sys.stdout.flush()
-            
-            # Start TLS if needed
-            if app.config.get('MAIL_USE_TLS') and not app.config.get('MAIL_USE_SSL'):
-                print(f"[EMAIL] Step 6: Starting TLS...")
-                sys.stdout.flush()
-                test_smtp.starttls()
-                print(f"[EMAIL] Step 7: ✅ TLS started")
-                sys.stdout.flush()
-            
-            # Test login
-            mail_username = app.config.get('MAIL_USERNAME')
-            print(f"[EMAIL] Step 8: Attempting login with username: {mail_username}")
-            sys.stdout.flush()
-            test_smtp.login(mail_username, app.config.get('MAIL_PASSWORD'))
-            print(f"[EMAIL] Step 9: ✅ SMTP authentication successful")
-            sys.stdout.flush()
-            test_smtp.quit()
-            print(f"[EMAIL] Step 10: ✅ SMTP connection closed successfully")
-            sys.stdout.flush()
-            
-        except Exception as e:
-            print(f"[EMAIL] ❌ SMTP connection test failed at step: {e}")
-            import traceback
-            traceback.print_exc()
-            sys.stdout.flush()
-            return False
-        
-        print(f"[EMAIL] Step 11: SMTP test passed, now attempting to send via Flask-Mail...")
-        sys.stdout.flush()
-        
-        # Use threading-based timeout for email sending (works in Flask's threaded environment)
-        import threading
-        import queue
-        
-        result_queue = queue.Queue()
-        exception_queue = queue.Queue()
-        
-        def send_email_thread():
-            try:
-                mail.send(msg)
-                result_queue.put(True)
-            except Exception as e:
-                exception_queue.put(e)
-        
-        email_thread = threading.Thread(target=send_email_thread, daemon=True)
-        email_thread.start()
-        email_thread.join(timeout=10)  # 10 second timeout
-        
-        if email_thread.is_alive():
-            print(f"[EMAIL] ❌ Email send timed out after 10 seconds")
-            return False
-        
-        if not exception_queue.empty():
-            exception = exception_queue.get()
-            raise exception
-        
-        if not result_queue.empty():
+        if response.status_code == 200:
+            result = response.json()
             print(f"[EMAIL] ✅ Verification email sent successfully to {email}")
+            print(f"[EMAIL] Resend API response: {result.get('id', 'unknown')}")
             return True
         else:
-            print(f"[EMAIL] ❌ Email send failed (no result)")
+            error_detail = response.text
+            print(f"[EMAIL] ❌ Resend API error: {response.status_code} - {error_detail}")
             return False
+            
+    except requests.exceptions.Timeout:
+        print(f"[EMAIL] ❌ Request to Resend API timed out")
+        return False
+    except requests.exceptions.RequestException as e:
+        print(f"[EMAIL] ❌ Request to Resend API failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
     except Exception as e:
         print(f"[EMAIL] ❌ Failed to send email to {email}: {e}")
         import traceback
