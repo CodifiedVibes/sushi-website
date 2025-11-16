@@ -443,6 +443,12 @@ def serve_event_page(event_id):
         return "Not Found", 404
     return send_from_directory('.', 'index.html')
 
+@app.route('/verify-email/<token>')
+def serve_verify_email_page(token):
+    """Serve the main HTML file for email verification (client-side routing)"""
+    # Serve index.html for client-side routing - React will handle the verification
+    return send_from_directory('.', 'index.html')
+
 @app.route('/<path:filename>')
 def serve_static(filename):
     """Serve static files (JS, CSS, etc.)"""
