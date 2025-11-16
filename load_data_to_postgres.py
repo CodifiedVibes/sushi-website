@@ -12,12 +12,37 @@ from psycopg2.extras import RealDictCursor
 def get_db_connection():
     """Create PostgreSQL database connection"""
     database_url = os.getenv('DATABASE_URL')
+    
+    # Try Railway's PG* variables as fallback
+    if not database_url:
+        pg_host = os.getenv('PGHOST')
+        pg_port = os.getenv('PGPORT')
+        pg_user = os.getenv('PGUSER')
+        pg_password = os.getenv('PGPASSWORD')
+        pg_database = os.getenv('PGDATABASE')
+        
+        if all([pg_host, pg_port, pg_user, pg_password, pg_database]):
+            database_url = f"postgresql://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_database}"
+            print(f"Using Railway PG* environment variables")
+    
     if not database_url:
         print("ERROR: DATABASE_URL environment variable not set")
+        print("Available env vars:", [k for k in os.environ.keys() if 'PG' in k or 'DATABASE' in k])
         return None
+    
+    # Mask password in debug output
+    if '@' in database_url:
+        parts = database_url.split('@')
+        if len(parts) == 2:
+            user_pass = parts[0].split('://')[-1]
+            if ':' in user_pass:
+                user = user_pass.split(':')[0]
+                masked_url = database_url.replace(user_pass, f"{user}:***")
+                print(f"Connecting to: {masked_url}")
     
     try:
         conn = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
+        print("✅ Successfully connected to database")
         return conn
     except Exception as e:
         print(f"ERROR: Failed to connect to database: {e}")
