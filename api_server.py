@@ -1691,6 +1691,56 @@ def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
 
+@app.route('/api/check-data', methods=['GET'])
+def check_data():
+    """Check what data exists in the database"""
+    conn = get_db_connection()
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
+    
+    try:
+        if is_postgres:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT 
+                    'categories' as table_name, COUNT(*) as row_count FROM categories
+                UNION ALL
+                SELECT 'menu_items', COUNT(*) FROM menu_items
+                UNION ALL
+                SELECT 'ingredients', COUNT(*) FROM ingredients
+                UNION ALL
+                SELECT 'runbook_items', COUNT(*) FROM runbook_items
+                UNION ALL
+                SELECT 'menu_item_ingredients', COUNT(*) FROM menu_item_ingredients
+            """)
+            results = cursor.fetchall()
+            table_counts = {row['table_name']: row['row_count'] for row in results}
+        else:
+            cursor = conn.execute("""
+                SELECT 'categories' as table_name, COUNT(*) as row_count FROM categories
+                UNION ALL
+                SELECT 'menu_items', COUNT(*) FROM menu_items
+                UNION ALL
+                SELECT 'ingredients', COUNT(*) FROM ingredients
+                UNION ALL
+                SELECT 'runbook_items', COUNT(*) FROM runbook_items
+                UNION ALL
+                SELECT 'menu_item_ingredients', COUNT(*) FROM menu_item_ingredients
+            """)
+            results = cursor.fetchall()
+            table_counts = {row[0]: row[1] for row in results}
+        
+        return jsonify({
+            'database_type': 'PostgreSQL' if is_postgres else 'SQLite',
+            'table_counts': table_counts,
+            'has_data': any(count > 0 for count in table_counts.values())
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
 @app.route('/api/debug-db-info', methods=['GET'])
 def debug_db_info():
     """Debug endpoint to see what database Railway is using"""
