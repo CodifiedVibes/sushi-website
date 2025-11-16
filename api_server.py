@@ -30,7 +30,15 @@ app.config['SESSION_COOKIE_SECURE'] = os.getenv('DATABASE_URL') is not None  # H
 # Email configuration
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
-app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+mail_use_tls = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+mail_use_ssl = os.getenv('MAIL_USE_SSL', 'False').lower() == 'true'
+# Port 465 uses SSL, port 587 uses TLS
+if app.config['MAIL_PORT'] == 465:
+    app.config['MAIL_USE_SSL'] = True
+    app.config['MAIL_USE_TLS'] = False
+else:
+    app.config['MAIL_USE_TLS'] = mail_use_tls
+    app.config['MAIL_USE_SSL'] = False
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', '')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', '')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', app.config['MAIL_USERNAME'])
