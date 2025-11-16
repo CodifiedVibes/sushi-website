@@ -1317,11 +1317,15 @@ def register():
                 # Send email in background thread to avoid blocking
                 import threading
                 def send_email_async():
-                    try:
-                        result = send_verification_email(email, verification_token)
-                        print(f"Email send result (async): {result}")
-                    except Exception as e:
-                        print(f"Email sending failed in background (non-critical): {e}")
+                    # Push application context for Flask-Mail
+                    with app.app_context():
+                        try:
+                            result = send_verification_email(email, verification_token)
+                            print(f"Email send result (async): {result}")
+                        except Exception as e:
+                            print(f"Email sending failed in background (non-critical): {e}")
+                            import traceback
+                            traceback.print_exc()
                 
                 email_thread = threading.Thread(target=send_email_async, daemon=True)
                 email_thread.start()
@@ -1712,6 +1716,26 @@ def set_admin():
 def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+
+@app.route('/api/debug-email-config', methods=['GET'])
+def debug_email_config():
+    """Debug endpoint to check email configuration (without exposing secrets)"""
+    mail_server = app.config.get('MAIL_SERVER', 'NOT SET')
+    mail_port = app.config.get('MAIL_PORT', 'NOT SET')
+    mail_use_tls = app.config.get('MAIL_USE_TLS', 'NOT SET')
+    mail_username = app.config.get('MAIL_USERNAME', 'NOT SET')
+    mail_password_set = 'YES' if app.config.get('MAIL_PASSWORD') else 'NO'
+    mail_sender = app.config.get('MAIL_DEFAULT_SENDER', 'NOT SET')
+    
+    return jsonify({
+        'mail_server': mail_server,
+        'mail_port': mail_port,
+        'mail_use_tls': mail_use_tls,
+        'mail_username': mail_username if mail_username != 'NOT SET' else 'NOT SET',
+        'mail_password_configured': mail_password_set,
+        'mail_default_sender': mail_sender if mail_sender != 'NOT SET' else 'NOT SET',
+        'email_configured': bool(app.config.get('MAIL_USERNAME') and app.config.get('MAIL_PASSWORD'))
+    }), 200
 
 @app.route('/api/check-data', methods=['GET'])
 def check_data():
