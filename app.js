@@ -272,7 +272,7 @@ function App() {
       const eventMenu = await getEventMenu(eventId);
       setSelectedEventMenu(eventMenu);
       setCart(eventMenu.menu_data || []);
-      setActiveNav('cart'); // Land on Cart page for shared events
+      setActiveNav('event-detail'); // Show event detail page for shared links
       setCurrentEventId(eventId);
       console.log('Event menu loaded successfully:', eventMenu.name);
     } catch (error) {
@@ -662,6 +662,17 @@ function App() {
 
   // Sidebar nav click handler
   const handleNavClick = (key) => {
+    // Clear event state when navigating away from event detail
+    if (key !== 'event-detail') {
+      setCurrentEventId(null);
+      setSelectedEventMenu(null);
+    }
+    
+    // If clicking Cart, make sure we're not viewing an event detail page
+    if (key === 'cart') {
+      setCurrentEventId(null);
+      setSelectedEventMenu(null);
+    }
     setActiveNav(key);
     setNavOpen(false);
     // Hide panels when navigating away (like recipes page behavior)
@@ -1569,7 +1580,160 @@ function App() {
               </div>
             </section>
           )}
-          {activeNav === 'cart' && (
+          {/* Event Detail Page - shown when viewing a shared event link */}
+          {activeNav === 'event-detail' && selectedEventMenu && (
+            <section id="event-detail" className="w-full">
+              <div className="max-w-5xl mx-auto">
+                {/* Event Header */}
+                <div className="mb-8">
+                  <h1 className="text-4xl font-bold text-white mb-3">{selectedEventMenu.name}</h1>
+                  {selectedEventMenu.description && (
+                    <p className="text-lg text-[#b0b8c1] mb-4">{selectedEventMenu.description}</p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-[#b0b8c1]">
+                    {selectedEventMenu.host_name && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#00D4AA]">Host:</span>
+                        <span>{selectedEventMenu.host_name}</span>
+                      </div>
+                    )}
+                    {selectedEventMenu.created_at && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#00D4AA]">Date:</span>
+                        <span>{new Date(selectedEventMenu.created_at).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#00D4AA]">Items:</span>
+                      <span>{cart.length}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Menu Items */}
+                {cart.length > 0 && (
+                  <div className="mb-8">
+                    <h2 className="text-2xl font-semibold text-[#00D4AA] mb-4">Menu Items</h2>
+                    <div className="space-y-4">
+                      {cart.map((item, idx) => {
+                        const itemData = typeof item === 'object' && item !== null ? item : null;
+                        if (!itemData) return null;
+                        
+                        const qty = itemData.quantity || 1;
+                        const inside = Array.isArray(itemData.ingredients_inside) 
+                          ? itemData.ingredients_inside 
+                          : (itemData.ingredients_inside ? [itemData.ingredients_inside] : []);
+                        const onTop = Array.isArray(itemData.ingredients_on_top)
+                          ? itemData.ingredients_on_top
+                          : (itemData.ingredients_on_top ? [itemData.ingredients_on_top] : []);
+                        
+                        return (
+                          <div key={idx} className="bg-[#2a2a2a] rounded-[12px] p-4 border border-[#3a3a3a]">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <h3 className="text-xl font-semibold text-white">{itemData.name}</h3>
+                                  {qty > 1 && (
+                                    <span className="bg-[#00D4AA] text-[#1a1a1a] px-2 py-1 rounded text-sm font-semibold">
+                                      ×{qty}
+                                    </span>
+                                  )}
+                                  {itemData.price && (
+                                    <span className="text-[#b0b8c1]">${parseFloat(itemData.price).toFixed(2)}</span>
+                                  )}
+                                </div>
+                                {itemData.description && (
+                                  <p className="text-sm text-[#b0b8c1] mb-3">{itemData.description}</p>
+                                )}
+                                {itemData.category && (
+                                  <span className="inline-block bg-[#3a3a3a] text-[#b0b8c1] px-2 py-1 rounded text-xs mb-3">
+                                    {itemData.category}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Ingredients */}
+                            {(inside.length > 0 || onTop.length > 0) && (
+                              <div className="mt-3 pt-3 border-t border-[#3a3a3a]">
+                                {inside.length > 0 && (
+                                  <div className="mb-2">
+                                    <span className="text-xs text-[#00D4AA] font-semibold">Inside:</span>
+                                    <div className="flex flex-wrap gap-2 mt-1">
+                                      {inside.map((ing, i) => (
+                                        <span key={i} className="bg-[#3a3a3a] text-[#b0b8c1] px-2 py-1 rounded text-xs">
+                                          {ing}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {onTop.length > 0 && (
+                                  <div>
+                                    <span className="text-xs text-[#00D4AA] font-semibold">On Top:</span>
+                                    <div className="flex flex-wrap gap-2 mt-1">
+                                      {onTop.map((ing, i) => (
+                                        <span key={i} className="bg-[#3a3a3a] text-[#b0b8c1] px-2 py-1 rounded text-xs">
+                                          {ing}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Ingredients Summary */}
+                {cart.length > 0 && (
+                  <div>
+                    <h2 className="text-2xl font-semibold text-[#00D4AA] mb-4">Shopping List</h2>
+                    {(() => {
+                      const { grouped, sortedCats } = getCartIngredientsSummary(cart, ingredients);
+                      return (
+                        <div className="space-y-4">
+                          {sortedCats.map(cat => (
+                            <div key={cat} className="bg-[#2a2a2a] rounded-[12px] p-4 border border-[#3a3a3a]">
+                              <h3 className="text-lg font-semibold text-[#00D4AA] mb-3">{cat}</h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {grouped[cat].map((ing, idx) => (
+                                  <div key={idx} className="flex items-center justify-between py-1">
+                                    <span className="text-white">{ing.name}</span>
+                                    <span className="text-[#00D4AA] font-semibold">
+                                      {ing.totalQty > 1 ? `${ing.totalQty}x` : ''}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {/* Empty State */}
+                {cart.length === 0 && (
+                  <div className="text-center py-12 bg-[#2a2a2a] rounded-[12px] border border-[#3a3a3a]">
+                    <div className="text-[#b0b8c1] text-lg mb-2">This event menu has no items</div>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Event Menu Hub - shown when navigating to Cart normally */}
+          {activeNav === 'cart' && !currentEventId && (
             <section id="cart" className="w-full">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-semibold text-[#00D4AA]">Event Menus</h2>
