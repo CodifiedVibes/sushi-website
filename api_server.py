@@ -42,6 +42,8 @@ else:
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', '')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', '')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', app.config['MAIL_USERNAME'])
+# Add timeout settings
+app.config['MAIL_TIMEOUT'] = 10  # 10 second timeout
 
 mail = Mail(app)
 
@@ -272,9 +274,38 @@ def send_verification_email(email, verification_token):
         )
         
         print(f"[EMAIL] Sending message via mail.send()...")
-        mail.send(msg)
-        print(f"[EMAIL] ✅ Verification email sent successfully to {email}")
-        return True
+        # Use threading-based timeout for email sending (works in Flask's threaded environment)
+        import threading
+        import queue
+        
+        result_queue = queue.Queue()
+        exception_queue = queue.Queue()
+        
+        def send_email_thread():
+            try:
+                mail.send(msg)
+                result_queue.put(True)
+            except Exception as e:
+                exception_queue.put(e)
+        
+        email_thread = threading.Thread(target=send_email_thread, daemon=True)
+        email_thread.start()
+        email_thread.join(timeout=10)  # 10 second timeout
+        
+        if email_thread.is_alive():
+            print(f"[EMAIL] ❌ Email send timed out after 10 seconds")
+            return False
+        
+        if not exception_queue.empty():
+            exception = exception_queue.get()
+            raise exception
+        
+        if not result_queue.empty():
+            print(f"[EMAIL] ✅ Verification email sent successfully to {email}")
+            return True
+        else:
+            print(f"[EMAIL] ❌ Email send failed (no result)")
+            return False
     except Exception as e:
         print(f"[EMAIL] ❌ Failed to send email to {email}: {e}")
         import traceback
@@ -1751,11 +1782,78 @@ def debug_email_config():
         'mail_server': mail_server,
         'mail_port': mail_port,
         'mail_use_tls': mail_use_tls,
+        'mail_use_ssl': app.config.get('MAIL_USE_SSL', 'NOT SET'),
         'mail_username': mail_username if mail_username != 'NOT SET' else 'NOT SET',
         'mail_password_configured': mail_password_set,
         'mail_default_sender': mail_sender if mail_sender != 'NOT SET' else 'NOT SET',
         'email_configured': bool(app.config.get('MAIL_USERNAME') and app.config.get('MAIL_PASSWORD'))
     }), 200
+
+@app.route('/api/test-email-connection', methods=['GET'])
+@require_admin
+def test_email_connection():
+    """Test SMTP connection (admin only)"""
+    try:
+        import smtplib
+        import socket
+        
+        mail_server = app.config.get('MAIL_SERVER')
+        mail_port = app.config.get('MAIL_PORT')
+        mail_use_tls = app.config.get('MAIL_USE_TLS', False)
+        mail_use_ssl = app.config.get('MAIL_USE_SSL', False)
+        mail_username = app.config.get('MAIL_USERNAME')
+        mail_password = app.config.get('MAIL_PASSWORD')
+        
+        results = {
+            'server': mail_server,
+            'port': mail_port,
+            'use_tls': mail_use_tls,
+            'use_ssl': mail_use_ssl,
+            'username': mail_username,
+            'password_set': bool(mail_password),
+            'steps': []
+        }
+        
+        # Step 1: Test DNS resolution
+        try:
+            socket.gethostbyname(mail_server)
+            results['steps'].append({'step': 'DNS resolution', 'status': 'success'})
+        except Exception as e:
+            results['steps'].append({'step': 'DNS resolution', 'status': 'failed', 'error': str(e)})
+            return jsonify(results), 200
+        
+        # Step 2: Test TCP connection
+        try:
+            sock = socket.create_connection((mail_server, mail_port), timeout=5)
+            sock.close()
+            results['steps'].append({'step': 'TCP connection', 'status': 'success'})
+        except Exception as e:
+            results['steps'].append({'step': 'TCP connection', 'status': 'failed', 'error': str(e)})
+            return jsonify(results), 200
+        
+        # Step 3: Test SMTP connection
+        try:
+            if mail_use_ssl:
+                smtp = smtplib.SMTP_SSL(mail_server, mail_port, timeout=10)
+            else:
+                smtp = smtplib.SMTP(mail_server, mail_port, timeout=10)
+            
+            if mail_use_tls and not mail_use_ssl:
+                smtp.starttls()
+            
+            # Try to login
+            smtp.login(mail_username, mail_password)
+            smtp.quit()
+            results['steps'].append({'step': 'SMTP authentication', 'status': 'success'})
+        except Exception as e:
+            results['steps'].append({'step': 'SMTP authentication', 'status': 'failed', 'error': str(e)})
+            return jsonify(results), 200
+        
+        results['overall_status'] = 'success'
+        return jsonify(results), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'overall_status': 'failed'}), 500
 
 @app.route('/api/check-data', methods=['GET'])
 def check_data():
