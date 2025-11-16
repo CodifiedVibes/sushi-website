@@ -408,33 +408,59 @@ def serve_static(filename):
 def get_menu():
     """Get all menu items with their ingredients"""
     conn = get_db_connection()
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
     
     try:
         # Get menu items with category info
-        cursor = conn.execute("""
-            SELECT 
-                mi.id, mi.name, mi.description, mi.price, mi.image_path,
-                c.name as category, c.color as category_color
-            FROM menu_items mi
-            JOIN categories c ON mi.category_id = c.id
-            WHERE mi.is_active = 1
-            ORDER BY c.sort_order, mi.sort_order, mi.name
-        """)
+        if is_postgres:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT 
+                    mi.id, mi.name, mi.description, mi.price, mi.image_path,
+                    c.name as category, c.color as category_color
+                FROM menu_items mi
+                JOIN categories c ON mi.category_id = c.id
+                WHERE mi.is_active = true
+                ORDER BY c.sort_order, mi.sort_order, mi.name
+            """)
+        else:
+            cursor = conn.execute("""
+                SELECT 
+                    mi.id, mi.name, mi.description, mi.price, mi.image_path,
+                    c.name as category, c.color as category_color
+                FROM menu_items mi
+                JOIN categories c ON mi.category_id = c.id
+                WHERE mi.is_active = 1
+                ORDER BY c.sort_order, mi.sort_order, mi.name
+            """)
         
         menu_items = []
         for row in cursor.fetchall():
             item = dict(row)
             
             # Get ingredients for this menu item
-            cursor2 = conn.execute("""
-                SELECT 
-                    i.name, i.category as ingredient_category,
-                    mii.quantity, mii.position
-                FROM menu_item_ingredients mii
-                JOIN ingredients i ON mii.ingredient_id = i.id
-                WHERE mii.menu_item_id = ?
-                ORDER BY mii.position, mii.sort_order
-            """, (item['id'],))
+            if is_postgres:
+                cursor2 = conn.cursor()
+                cursor2.execute("""
+                    SELECT 
+                        i.name, i.category as ingredient_category,
+                        mii.quantity, mii.position
+                    FROM menu_item_ingredients mii
+                    JOIN ingredients i ON mii.ingredient_id = i.id
+                    WHERE mii.menu_item_id = %s
+                    ORDER BY mii.position, mii.sort_order
+                """, (item['id'],))
+            else:
+                cursor2 = conn.execute("""
+                    SELECT 
+                        i.name, i.category as ingredient_category,
+                        mii.quantity, mii.position
+                    FROM menu_item_ingredients mii
+                    JOIN ingredients i ON mii.ingredient_id = i.id
+                    WHERE mii.menu_item_id = ?
+                    ORDER BY mii.position, mii.sort_order
+                """, (item['id'],))
             
             ingredients_inside = []
             ingredients_on_top = []
@@ -459,14 +485,25 @@ def get_menu():
 def get_ingredients():
     """Get all ingredients grouped by category"""
     conn = get_db_connection()
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
     
     try:
-        cursor = conn.execute("""
-            SELECT name, category, store, cost, quantity, unit_cost, brand, 
-                   shopping_cart_name, uses_per_purchase
-            FROM ingredients
-            ORDER BY category, name
-        """)
+        if is_postgres:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT name, category, store, cost, quantity, unit_cost, brand, 
+                       shopping_cart_name, uses_per_purchase
+                FROM ingredients
+                ORDER BY category, name
+            """)
+        else:
+            cursor = conn.execute("""
+                SELECT name, category, store, cost, quantity, unit_cost, brand, 
+                       shopping_cart_name, uses_per_purchase
+                FROM ingredients
+                ORDER BY category, name
+            """)
         
         ingredients = {}
         for row in cursor.fetchall():
@@ -485,12 +522,21 @@ def get_ingredients():
 def get_runbook():
     """Get all runbook items"""
     conn = get_db_connection()
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
     
     try:
-        cursor = conn.execute("""
-            SELECT * FROM runbook_items 
-            ORDER BY sort_order ASC, timeline
-        """)
+        if is_postgres:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT * FROM runbook_items 
+                ORDER BY sort_order ASC, timeline
+            """)
+        else:
+            cursor = conn.execute("""
+                SELECT * FROM runbook_items 
+                ORDER BY sort_order ASC, timeline
+            """)
         
         runbook_items = [dict(row) for row in cursor.fetchall()]
         
@@ -503,12 +549,21 @@ def get_runbook():
 def get_categories():
     """Get all categories"""
     conn = get_db_connection()
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
     
     try:
-        cursor = conn.execute("""
-            SELECT * FROM categories
-            ORDER BY sort_order, name
-        """)
+        if is_postgres:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT * FROM categories
+                ORDER BY sort_order, name
+            """)
+        else:
+            cursor = conn.execute("""
+                SELECT * FROM categories
+                ORDER BY sort_order, name
+            """)
         
         categories = [dict(row) for row in cursor.fetchall()]
         return jsonify(categories)
@@ -520,16 +575,29 @@ def get_categories():
 def get_menu_item(item_id):
     """Get a specific menu item by ID"""
     conn = get_db_connection()
+    database_url = os.getenv('DATABASE_URL')
+    is_postgres = database_url and database_url.startswith('postgres')
     
     try:
-        cursor = conn.execute("""
-            SELECT 
-                mi.id, mi.name, mi.description, mi.price, mi.image_path,
-                c.name as category, c.color as category_color
-            FROM menu_items mi
-            JOIN categories c ON mi.category_id = c.id
-            WHERE mi.id = ? AND mi.is_active = 1
-        """, (item_id,))
+        if is_postgres:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT 
+                    mi.id, mi.name, mi.description, mi.price, mi.image_path,
+                    c.name as category, c.color as category_color
+                FROM menu_items mi
+                JOIN categories c ON mi.category_id = c.id
+                WHERE mi.id = %s AND mi.is_active = true
+            """, (item_id,))
+        else:
+            cursor = conn.execute("""
+                SELECT 
+                    mi.id, mi.name, mi.description, mi.price, mi.image_path,
+                    c.name as category, c.color as category_color
+                FROM menu_items mi
+                JOIN categories c ON mi.category_id = c.id
+                WHERE mi.id = ? AND mi.is_active = 1
+            """, (item_id,))
         
         row = cursor.fetchone()
         if not row:
@@ -538,15 +606,27 @@ def get_menu_item(item_id):
         item = dict(row)
         
         # Get ingredients for this menu item
-        cursor2 = conn.execute("""
-            SELECT 
-                i.name, i.category as ingredient_category,
-                mii.quantity, mii.position
-            FROM menu_item_ingredients mii
-            JOIN ingredients i ON mii.ingredient_id = i.id
-            WHERE mii.menu_item_id = ?
-            ORDER BY mii.position, mii.sort_order
-        """, (item_id,))
+        if is_postgres:
+            cursor2 = conn.cursor()
+            cursor2.execute("""
+                SELECT 
+                    i.name, i.category as ingredient_category,
+                    mii.quantity, mii.position
+                FROM menu_item_ingredients mii
+                JOIN ingredients i ON mii.ingredient_id = i.id
+                WHERE mii.menu_item_id = %s
+                ORDER BY mii.position, mii.sort_order
+            """, (item_id,))
+        else:
+            cursor2 = conn.execute("""
+                SELECT 
+                    i.name, i.category as ingredient_category,
+                    mii.quantity, mii.position
+                FROM menu_item_ingredients mii
+                JOIN ingredients i ON mii.ingredient_id = i.id
+                WHERE mii.menu_item_id = ?
+                ORDER BY mii.position, mii.sort_order
+            """, (item_id,))
         
         ingredients_inside = []
         ingredients_on_top = []
