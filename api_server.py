@@ -274,6 +274,39 @@ def send_verification_email(email, verification_token):
         )
         
         print(f"[EMAIL] Sending message via mail.send()...")
+        # Test SMTP connection first with detailed logging
+        try:
+            import smtplib
+            print(f"[EMAIL] Testing SMTP connection to {app.config.get('MAIL_SERVER')}:{app.config.get('MAIL_PORT')}...")
+            
+            # Create SMTP connection with timeout
+            if app.config.get('MAIL_USE_SSL'):
+                print(f"[EMAIL] Using SMTP_SSL (SSL)")
+                test_smtp = smtplib.SMTP_SSL(app.config.get('MAIL_SERVER'), app.config.get('MAIL_PORT'), timeout=5)
+            else:
+                print(f"[EMAIL] Using SMTP (will STARTTLS if needed)")
+                test_smtp = smtplib.SMTP(app.config.get('MAIL_SERVER'), app.config.get('MAIL_PORT'), timeout=5)
+            
+            print(f"[EMAIL] SMTP connection established")
+            
+            # Start TLS if needed
+            if app.config.get('MAIL_USE_TLS') and not app.config.get('MAIL_USE_SSL'):
+                print(f"[EMAIL] Starting TLS...")
+                test_smtp.starttls()
+                print(f"[EMAIL] TLS started")
+            
+            # Test login
+            print(f"[EMAIL] Attempting login with username: {app.config.get('MAIL_USERNAME')}")
+            test_smtp.login(app.config.get('MAIL_USERNAME'), app.config.get('MAIL_PASSWORD'))
+            print(f"[EMAIL] ✅ SMTP authentication successful")
+            test_smtp.quit()
+            
+        except Exception as e:
+            print(f"[EMAIL] ❌ SMTP connection test failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+        
         # Use threading-based timeout for email sending (works in Flask's threaded environment)
         import threading
         import queue
