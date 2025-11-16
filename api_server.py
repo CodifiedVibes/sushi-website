@@ -1312,20 +1312,42 @@ def register():
         # Send verification email (non-blocking - don't fail registration if email fails)
         email_sent = False
         try:
-            email_sent = send_verification_email(email, verification_token)
+            # Quick check - if email not configured, skip immediately
+            if app.config.get('MAIL_USERNAME') and app.config.get('MAIL_PASSWORD'):
+                # Send email in background thread to avoid blocking
+                import threading
+                def send_email_async():
+                    try:
+                        result = send_verification_email(email, verification_token)
+                        print(f"Email send result (async): {result}")
+                    except Exception as e:
+                        print(f"Email sending failed in background (non-critical): {e}")
+                
+                email_thread = threading.Thread(target=send_email_async, daemon=True)
+                email_thread.start()
+                # Optimistically assume email will be sent (we don't wait for it)
+                email_sent = True
+            else:
+                print("Email not configured, skipping email send")
         except Exception as e:
-            print(f"Email sending failed (non-critical): {e}")
+            print(f"Email sending setup failed (non-critical): {e}")
+            import traceback
+            traceback.print_exc()
         
+        # Always return token if email not sent (for manual verification)
         message = 'Registration successful. Please check your email to verify your account.'
         if not email_sent:
-            message += f' (Note: Email verification not configured. Contact admin to verify account. Token: {verification_token})'
+            message += f' (Note: Email verification not configured. Use token for manual verification.)'
         
-        return jsonify({
+        response_data = {
             'message': message,
             'user_id': user_id,
             'email_sent': email_sent,
-            'verification_token': verification_token if not email_sent else None
-        }), 201
+            'verification_token': verification_token  # Always return token for manual verification if needed
+        }
+        
+        print(f"Registration response: user_id={user_id}, email_sent={email_sent}")
+        return jsonify(response_data), 201
         
     except Exception as e:
         print(f"Registration error: {e}")

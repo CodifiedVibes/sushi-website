@@ -453,16 +453,23 @@ function App() {
     setAuthLoading(true);
     
     try {
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const response = await fetch(`${API_BASE_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        signal: controller.signal,
         body: JSON.stringify({
           username: registerUsername,
           email: registerEmail,
           password: registerPassword
         })
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Registration failed' }));
@@ -472,6 +479,7 @@ function App() {
       }
       
       const data = await response.json();
+      console.log('Registration response:', data);
       
       if (data.email_sent === false) {
         // Email not configured - show token for manual verification
@@ -487,7 +495,12 @@ function App() {
       setRegisterPassword('');
       setShowLoginModal(true);
     } catch (error) {
-      setAuthError('Network error. Please try again.');
+      if (error.name === 'AbortError') {
+        setAuthError('Request timed out. Please try again.');
+      } else {
+        console.error('Registration error:', error);
+        setAuthError('Network error. Please try again.');
+      }
     } finally {
       setAuthLoading(false);
     }
