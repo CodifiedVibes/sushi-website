@@ -87,21 +87,41 @@ function categorizeIngredients(ingredients) {
 function getCartIngredients(cart, ingredientsMaster) {
   // Build a map of ingredient name -> ingredient object (for category lookup)
   const ingredientMap = {};
-  Object.values(ingredientsMaster).flat().forEach(ing => {
-    ingredientMap[ing.name.toLowerCase()] = ing;
+  Object.values(ingredientsMaster || {}).flat().forEach(ing => {
+    if (ing && ing.name) {
+      ingredientMap[ing.name.toLowerCase()] = ing;
+    }
   });
   // Gather all ingredients from cart
   let allIngredients = [];
   cart.forEach(item => {
-    // Combine inside and on top
-    const inside = (item.ingredients_inside || []).map(i => i.trim()).filter(Boolean);
-    const onTop = (item.ingredients_on_top || []).map(i => i.trim()).filter(Boolean);
+    if (!item) return;
+    // Combine inside and on top - handle both array and string formats
+    const inside = Array.isArray(item.ingredients_inside) 
+      ? item.ingredients_inside.map(i => String(i).trim()).filter(Boolean)
+      : (item.ingredients_inside ? [String(item.ingredients_inside).trim()] : []).filter(Boolean);
+    const onTop = Array.isArray(item.ingredients_on_top)
+      ? item.ingredients_on_top.map(i => String(i).trim()).filter(Boolean)
+      : (item.ingredients_on_top ? [String(item.ingredients_on_top).trim()] : []).filter(Boolean);
     allIngredients.push(...inside, ...onTop);
   });
   // Deduplicate (case-insensitive)
   const uniqueNames = Array.from(new Set(allIngredients.map(i => i.toLowerCase())));
   // Map to ingredient objects (with fallback if not found)
-  return uniqueNames.map(name => ingredientMap[name] || { name });
+  return uniqueNames.map(name => {
+    // Try exact match first
+    if (ingredientMap[name]) {
+      return ingredientMap[name];
+    }
+    // Try fuzzy match
+    for (const [key, ing] of Object.entries(ingredientMap)) {
+      if (key.includes(name) || name.includes(key)) {
+        return ing;
+      }
+    }
+    // Fallback
+    return { name: allIngredients.find(n => n.toLowerCase() === name) || name };
+  });
 }
 
 // Helper: Count menu items in cart
@@ -175,15 +195,27 @@ function getCartIngredientsSummary(cart, ingredientsMaster) {
   cart.forEach(item => {
     const qty = item.quantity || 1;
     // Use both ingredients_inside and ingredients_on_top
-    const inside = (item.ingredients_inside || []).map(i => i.trim()).filter(Boolean);
-    const onTop = (item.ingredients_on_top || []).map(i => i.trim()).filter(Boolean);
+    const inside = (item.ingredients_inside || []).map(i => String(i).trim()).filter(Boolean);
+    const onTop = (item.ingredients_on_top || []).map(i => String(i).trim()).filter(Boolean);
     [...inside, ...onTop].forEach(ingName => {
-      const key = ingName.toLowerCase();
+      const key = ingName.toLowerCase().trim();
+      // Try exact match first
       if (ingredientMap[key]) {
         ingredientMap[key].totalQty += qty;
       } else {
-        // Fallback for missing ingredient in master list
-        ingredientMap[key] = { name: ingName, category: 'Other', store: '', totalQty: qty };
+        // Try fuzzy match - find ingredient that contains this name or vice versa
+        let matched = false;
+        for (const [mapKey, mapIng] of Object.entries(ingredientMap)) {
+          if (mapKey.includes(key) || key.includes(mapKey)) {
+            mapIng.totalQty += qty;
+            matched = true;
+            break;
+          }
+        }
+        // If no match found, add as fallback
+        if (!matched) {
+          ingredientMap[key] = { name: ingName, category: 'Other', store: '', totalQty: qty };
+        }
       }
     });
   });
@@ -1206,15 +1238,41 @@ function App() {
                     ].map(n => n.toLowerCase());
                     allItems = allItems.filter(i => topRanked.includes(i.name.toLowerCase()));
                   } else if (menuFilter === 'salmon') {
-                    allItems = allItems.filter(i =>
-                      ([...(i.ingredients_inside||[]), ...(i.ingredients_on_top||[])]
-                        .some(ing => (ing||'').toLowerCase().includes('salmon')))
-                    );
+                    // Build set of salmon-related ingredient names
+                    const salmonIngredients = new Set();
+                    Object.values(ingredients).flat().forEach(ing => {
+                      const name = (ing.name || '').toLowerCase();
+                      const category = (ing.category || '').toLowerCase();
+                      if (name.includes('salmon') || name.includes('sake') || 
+                          name.includes('zuke') || category.includes('salmon')) {
+                        salmonIngredients.add(ing.name.toLowerCase());
+                      }
+                    });
+                    // Also add common salmon names
+                    ['salmon', 'sake', 'seared sake', 'zuke sake'].forEach(n => salmonIngredients.add(n.toLowerCase()));
+                    
+                    allItems = allItems.filter(i => {
+                      const allIngredients = [...(i.ingredients_inside||[]), ...(i.ingredients_on_top||[])];
+                      return allIngredients.some(ing => salmonIngredients.has((ing||'').toLowerCase()));
+                    });
                   } else if (menuFilter === 'tuna') {
-                    allItems = allItems.filter(i =>
-                      ([...(i.ingredients_inside||[]), ...(i.ingredients_on_top||[])]
-                        .some(ing => (ing||'').toLowerCase().includes('tuna')))
-                    );
+                    // Build set of tuna-related ingredient names
+                    const tunaIngredients = new Set();
+                    Object.values(ingredients).flat().forEach(ing => {
+                      const name = (ing.name || '').toLowerCase();
+                      const category = (ing.category || '').toLowerCase();
+                      if (name.includes('tuna') || name.includes('akami') || name.includes('otoro') ||
+                          name.includes('chutoro') || category.includes('tuna')) {
+                        tunaIngredients.add(ing.name.toLowerCase());
+                      }
+                    });
+                    // Also add common tuna names
+                    ['tuna', 'akami', 'otoro', 'chutoro', 'toro'].forEach(n => tunaIngredients.add(n.toLowerCase()));
+                    
+                    allItems = allItems.filter(i => {
+                      const allIngredients = [...(i.ingredients_inside||[]), ...(i.ingredients_on_top||[])];
+                      return allIngredients.some(ing => tunaIngredients.has((ing||'').toLowerCase()));
+                    });
                   } else if (menuFilter === 'veggie') {
                     // Get all Meat & Fish ingredients for filtering
                     const meatFishIngredients = new Set();
