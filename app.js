@@ -406,7 +406,8 @@ function App() {
         if (retryCount < maxRetries) {
           setTimeout(initClerk, 100);
         } else {
-          console.error('Clerk SDK failed to load after 5 seconds');
+          console.error('[Clerk] SDK failed to load after 5 seconds');
+          setClerkError('Clerk SDK failed to load. Check if CDN is accessible.');
           setClerkLoaded(true);
         }
         return;
@@ -423,12 +424,18 @@ function App() {
           if (configResponse.ok) {
             const config = await configResponse.json();
             publishableKey = config.publishable_key;
-            console.log('[Clerk] Config fetched, configured:', config.configured);
+            console.log('[Clerk] Config fetched, configured:', config.configured, 'Key length:', publishableKey ? publishableKey.length : 0);
+            
+            if (!config.configured) {
+              setClerkError('Clerk publishable key not configured in Railway. Please add CLERK_PUBLISHABLE_KEY environment variable.');
+            }
           } else {
             console.warn('[Clerk] Config endpoint returned:', configResponse.status);
+            setClerkError(`Failed to fetch Clerk config: ${configResponse.status}`);
           }
         } catch (e) {
           console.error('[Clerk] Could not fetch Clerk config from backend:', e);
+          setClerkError('Failed to connect to backend for Clerk config.');
         }
 
         if (!publishableKey || publishableKey.includes('YOUR_KEY') || !publishableKey.startsWith('pk_')) {
@@ -1181,6 +1188,12 @@ function App() {
               <div className="text-xs text-[#b0b8c1] text-center py-2">Loading authentication...</div>
             ) : clerkError ? (
               <div className="text-xs text-red-400 text-center py-2">{clerkError}</div>
+            ) : clerkError ? (
+              <div className="text-xs text-red-400 text-center py-2 px-2">
+                {clerkError}
+                <br />
+                <span className="text-[#b0b8c1] text-[10px]">Check Railway env vars: CLERK_PUBLISHABLE_KEY</span>
+              </div>
             ) : window.clerk ? (
               <div className="flex gap-2">
                 <button
@@ -1199,7 +1212,9 @@ function App() {
                 </button>
               </div>
             ) : (
-              <div className="text-xs text-[#b0b8c1] text-center py-2">Authentication unavailable</div>
+              <div className="text-xs text-[#b0b8c1] text-center py-2">
+                {clerkLoaded ? 'Authentication unavailable' : 'Loading authentication...'}
+              </div>
             )}
           </div>
         )}
