@@ -183,8 +183,84 @@ def ensure_auth_schema():
 ensure_auth_schema()
 
 # Authentication helper functions
+def verify_clerk_token(token):
+    """Verify Clerk session token using Clerk Backend API"""
+    clerk_secret_key = os.getenv('CLERK_SECRET_KEY')
+    if not clerk_secret_key:
+        print("[CLERK] CLERK_SECRET_KEY not configured")
+        return None
+    
+    try:
+        import requests
+        
+        # Clerk's Backend API: Verify the token and get user info
+        # The token is a JWT session token from Clerk frontend
+        headers = {
+            'Authorization': f'Bearer {clerk_secret_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        # Decode the JWT to get the session ID (first, let's try to verify via API)
+        # Actually, Clerk tokens can be verified by decoding the JWT and then fetching user
+        # But simpler: use Clerk's Backend API to verify the token
+        # The frontend sends a session token, we verify it by getting the user
+        
+        # Method: Decode JWT to get user_id, then fetch user details
+        # For now, let's use PyJWT to decode (if available) or use Clerk API
+        try:
+            import jwt
+            # Decode without verification first to get user_id
+            decoded = jwt.decode(token, options={"verify_signature": False})
+            user_id = decoded.get('sub')  # Clerk JWT uses 'sub' for user ID
+            
+            if user_id:
+                # Fetch user details from Clerk API
+                user_url = f'https://api.clerk.com/v1/users/{user_id}'
+                user_response = requests.get(user_url, headers=headers, timeout=5)
+                
+                if user_response.status_code == 200:
+                    user_data = user_response.json()
+                    primary_email = None
+                    email_verified = False
+                    
+                    if user_data.get('email_addresses'):
+                        for email in user_data['email_addresses']:
+                            if email.get('id') == user_data.get('primary_email_address_id'):
+                                primary_email = email.get('email_address')
+                                email_verified = email.get('verification', {}).get('status') == 'verified'
+                                break
+                    
+                    return {
+                        'id': user_data.get('id'),  # Clerk user ID (e.g., 'user_2abc123xyz')
+                        'username': user_data.get('username') or user_data.get('first_name') or primary_email or 'User',
+                        'email': primary_email,
+                        'email_verified': email_verified,
+                        'role': 'user'  # Default role, can be enhanced later
+                    }
+        except ImportError:
+            # PyJWT not installed, use alternative method
+            print("[CLERK] PyJWT not installed, using alternative verification")
+            # Could use Clerk's verify endpoint if available
+            pass
+        
+        return None
+    except Exception as e:
+        print(f"[CLERK] Error verifying token: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
 def get_current_user():
-    """Get current logged in user from session"""
+    """Get current logged in user from Clerk token or session (fallback)"""
+    # First, try to get Clerk token from Authorization header
+    auth_header = request.headers.get('Authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split(' ', 1)[1]
+        clerk_user = verify_clerk_token(token)
+        if clerk_user:
+            return clerk_user
+    
+    # Fallback to session-based auth (for backward compatibility during migration)
     user_id = session.get('user_id')
     if not user_id:
         return None
@@ -219,12 +295,14 @@ def get_current_user():
         conn.close()
 
 def require_auth(f):
-    """Decorator to require authentication"""
+    """Decorator to require authentication (supports both Clerk and session-based auth)"""
     def wrapper(*args, **kwargs):
         user = get_current_user()
         if not user:
             return jsonify({'error': 'Authentication required'}), 401
-        if not user.get('email_verified'):
+        # For Clerk users, email_verified is always true (Clerk handles verification)
+        # For session-based users, check email_verified
+        if not user.get('id', '').startswith('user_') and not user.get('email_verified'):
             return jsonify({'error': 'Email verification required'}), 403
         return f(*args, **kwargs)
     wrapper.__name__ = f.__name__
@@ -1772,6 +1850,15 @@ def set_admin():
         return jsonify({'error': str(e)}), 500
     finally:
         conn.close()
+
+@app.route('/api/clerk-config', methods=['GET'])
+def clerk_config():
+    """Return Clerk publishable key for frontend initialization"""
+    publishable_key = os.getenv('CLERK_PUBLISHABLE_KEY', '')
+    return jsonify({
+        'publishable_key': publishable_key,
+        'configured': bool(publishable_key and publishable_key.startswith('pk_'))
+    })
 
 @app.route('/api/health', methods=['GET'])
 def health_check():

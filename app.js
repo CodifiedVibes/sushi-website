@@ -5,6 +5,12 @@ const API_BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:5001/api' 
   : `https://${window.location.hostname}/api`;
 
+// Clerk Configuration - Get from environment or use placeholder
+// In production, Railway will provide this via environment variable
+// For now, we'll fetch it from a config endpoint or use a placeholder
+let CLERK_PUBLISHABLE_KEY = null;
+let clerk = null;
+
 const CATEGORY_ORDER = [
   'Appetizer',
   'Nigiri',
@@ -381,143 +387,147 @@ function App() {
   const [showShoppingCart, setShowShoppingCart] = useState(false); // Control shopping cart panel visibility
   const [showTipsPanel, setShowTipsPanel] = useState(false); // Control tips panel visibility
   
-  // Authentication state
-  const [currentUser, setCurrentUser] = useState(null);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authError, setAuthError] = useState(null);
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [registerUsername, setRegisterUsername] = useState('');
-  const [registerEmail, setRegisterEmail] = useState('');
-  const [registerPassword, setRegisterPassword] = useState('');
-  const [showVerifyEmailModal, setShowVerifyEmailModal] = useState(false);
-  const [verificationToken, setVerificationToken] = useState('');
+  // Clerk authentication state
+  const [clerkLoaded, setClerkLoaded] = useState(false);
+  const [clerkUser, setClerkUser] = useState(null);
+  const [showClerkSignIn, setShowClerkSignIn] = useState(false);
+  const [showClerkSignUp, setShowClerkSignUp] = useState(false);
 
-  // Check authentication status on mount
+  // Initialize Clerk when SDK loads
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/me`, {
-          credentials: 'include'
-        });
-        if (response.ok) {
-          const user = await response.json();
-          setCurrentUser(user);
+    let retryCount = 0;
+    const maxRetries = 50; // 5 seconds max wait
+    
+    const initClerk = async () => {
+      // Wait for Clerk SDK to be available
+      if (typeof window.Clerk === 'undefined') {
+        retryCount++;
+        if (retryCount < maxRetries) {
+          setTimeout(initClerk, 100);
+        } else {
+          console.error('Clerk SDK failed to load after 5 seconds');
+          setClerkLoaded(true);
         }
-      } catch (error) {
-        console.log('Not authenticated');
-      }
-    };
-    checkAuth();
-  }, []);
-
-  // Authentication functions
-  const handleLogin = async (e) => {
-    if (e) e.preventDefault();
-    setAuthError(null);
-    setAuthLoading(true);
-    
-    try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          email: loginEmail,
-          password: loginPassword
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setCurrentUser(data.user);
-        setShowLoginModal(false);
-        setLoginEmail('');
-        setLoginPassword('');
-        setAuthError(null);
-      } else {
-        setAuthError(data.error || 'Login failed');
-      }
-    } catch (error) {
-      setAuthError('Network error. Please try again.');
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  const handleRegister = async (e) => {
-    if (e) e.preventDefault();
-    setAuthError(null);
-    setAuthLoading(true);
-    
-    try {
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
-      const response = await fetch(`${API_BASE_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        signal: controller.signal,
-        body: JSON.stringify({
-          username: registerUsername,
-          email: registerEmail,
-          password: registerPassword
-        })
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Registration failed' }));
-        setAuthError(errorData.error || 'Registration failed');
-        setAuthLoading(false);
         return;
       }
-      
-      const data = await response.json();
-      console.log('Registration response:', data);
-      
-      if (data.email_sent === false) {
-        // Email not configured - show token for manual verification
-        alert(`Registration successful! Email verification is not configured.\n\nFor testing, you can manually verify your account or contact admin.\n\nVerification token: ${data.verification_token || 'check server logs'}`);
-      } else {
-        alert('Registration successful! Please check your email to verify your account before logging in.');
+
+      try {
+        console.log('[Clerk] SDK loaded, fetching publishable key...');
+        
+        // Get publishable key from backend config endpoint
+        let publishableKey = null;
+        
+        try {
+          const configResponse = await fetch(`${API_BASE_URL}/clerk-config`);
+          if (configResponse.ok) {
+            const config = await configResponse.json();
+            publishableKey = config.publishable_key;
+            console.log('[Clerk] Config fetched, configured:', config.configured);
+          } else {
+            console.warn('[Clerk] Config endpoint returned:', configResponse.status);
+          }
+        } catch (e) {
+          console.error('[Clerk] Could not fetch Clerk config from backend:', e);
+        }
+
+        if (!publishableKey || publishableKey.includes('YOUR_KEY') || !publishableKey.startsWith('pk_')) {
+          console.error('[Clerk] Publishable key not configured or invalid:', publishableKey ? 'key exists but invalid format' : 'key missing');
+          setClerkLoaded(true);
+          return;
+        }
+
+        console.log('[Clerk] Initializing with publishable key:', publishableKey.substring(0, 20) + '...');
+        
+        // Initialize Clerk
+        const clerkInstance = new window.Clerk(publishableKey);
+        await clerkInstance.load();
+        
+        console.log('[Clerk] Clerk instance loaded successfully');
+        
+        // Set up state listener
+        clerkInstance.addListener('user', (user) => {
+          console.log('[Clerk] User state changed:', user ? user.id : 'signed out');
+          setClerkUser(user);
+        });
+
+        // Get initial user state
+        setClerkUser(clerkInstance.user);
+        window.clerk = clerkInstance; // Store globally for API calls
+        setClerkLoaded(true);
+        
+        console.log('[Clerk] Initialization complete. User:', clerkInstance.user ? clerkInstance.user.id : 'not signed in');
+      } catch (error) {
+        console.error('[Clerk] Failed to initialize Clerk:', error);
+        setClerkLoaded(true); // Set loaded even on error to prevent infinite retries
       }
-      
-      setAuthError(null);
-      setShowRegisterModal(false);
-      setRegisterUsername('');
-      setRegisterEmail('');
-      setRegisterPassword('');
-      setShowLoginModal(true);
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        setAuthError('Request timed out. Please try again.');
-      } else {
-        console.error('Registration error:', error);
-        setAuthError('Network error. Please try again.');
+    };
+
+    initClerk();
+  }, []);
+
+  // Helper to get auth headers for API calls
+  const getAuthHeaders = async () => {
+    const headers = { 'Content-Type': 'application/json' };
+    
+    if (window.clerk && window.clerk.session) {
+      try {
+        const token = await window.clerk.session.getToken();
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+      } catch (error) {
+        console.error('Failed to get Clerk token:', error);
       }
-    } finally {
-      setAuthLoading(false);
+    }
+    
+    return headers;
+  };
+
+  // Clerk authentication functions
+  const handleClerkSignIn = () => {
+    console.log('[Clerk] Sign in clicked, clerk available:', !!window.clerk);
+    if (window.clerk) {
+      // Use Clerk's redirect to sign-in page (most reliable for vanilla JS)
+      // Clerk will redirect back to current page after sign-in
+      const currentUrl = window.location.href;
+      window.clerk.redirectToSignIn({ 
+        redirectUrl: currentUrl 
+      });
+    } else {
+      console.error('[Clerk] Clerk not initialized. Please refresh the page.');
+      alert('Authentication is loading. Please refresh the page and try again.');
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch(`${API_BASE_URL}/logout`, {
-        method: 'POST',
-        credentials: 'include'
+  const handleClerkSignUp = () => {
+    console.log('[Clerk] Sign up clicked, clerk available:', !!window.clerk);
+    if (window.clerk) {
+      // Use Clerk's redirect to sign-up page
+      const currentUrl = window.location.href;
+      window.clerk.redirectToSignUp({ 
+        redirectUrl: currentUrl 
       });
-      setCurrentUser(null);
-    } catch (error) {
-      console.error('Logout error:', error);
+    } else {
+      console.error('[Clerk] Clerk not initialized. Please refresh the page.');
+      alert('Authentication is loading. Please refresh the page and try again.');
     }
   };
+
+  const handleClerkSignOut = async () => {
+    if (window.clerk) {
+      await window.clerk.signOut();
+      setClerkUser(null);
+    }
+  };
+
+  // Convert Clerk user to our user format for compatibility
+  const currentUser = clerkUser ? {
+    id: clerkUser.id,
+    username: clerkUser.username || clerkUser.firstName || clerkUser.emailAddresses[0]?.emailAddress || 'User',
+    email: clerkUser.emailAddresses[0]?.emailAddress || '',
+    email_verified: clerkUser.emailAddresses[0]?.verification?.status === 'verified' || false,
+    role: 'user' // Default role
+  } : null;
 
   useEffect(() => {
     console.log('Starting data fetch...');
@@ -729,11 +739,11 @@ function App() {
     try {
       console.log('Creating event menu with data:', { name, description, menuData, hostName });
       
+      const headers = await getAuthHeaders();
+      
       const response = await fetch(`${API_BASE_URL}/event-menus`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         credentials: 'include',
         body: JSON.stringify({
           name,
@@ -819,8 +829,10 @@ function App() {
 
   const listEventMenus = async (filter = null) => {
     try {
+      const headers = await getAuthHeaders();
       const url = filter ? `${API_BASE_URL}/event-menus?filter=${filter}` : `${API_BASE_URL}/event-menus`;
       const response = await fetch(url, {
+        headers: headers,
         credentials: 'include'
       });
       
@@ -838,7 +850,7 @@ function App() {
 
   // Load event menus when on my-events page
   useEffect(() => {
-    if (activeNav === 'my-events' && currentUser && currentUser.email_verified) {
+    if (activeNav === 'my-events' && currentUser) {
       const loadMenus = async () => {
         setEventMenusLoading(true);
         try {
@@ -852,7 +864,7 @@ function App() {
         }
       };
       loadMenus();
-    } else if (activeNav === 'my-events' && (!currentUser || !currentUser.email_verified)) {
+    } else if (activeNav === 'my-events' && !currentUser) {
       setEventMenus([]);
       setEventMenusLoading(false);
     }
@@ -1135,7 +1147,7 @@ function App() {
               </>
             )}
             <button
-              onClick={handleLogout}
+              onClick={handleClerkSignOut}
               className="w-full text-xs text-[#b0b8c1] hover:text-white transition"
             >
               Logout
@@ -1144,13 +1156,13 @@ function App() {
         ) : (
           <div className="mx-4 mb-4 flex gap-2">
             <button
-              onClick={() => setShowLoginModal(true)}
+              onClick={handleClerkSignIn}
               className="flex-1 bg-[#00D4AA] text-[#1a1a1a] px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#00B894] transition"
             >
               Login
             </button>
             <button
-              onClick={() => setShowRegisterModal(true)}
+              onClick={handleClerkSignUp}
               className="flex-1 bg-[#3a3a3a] text-white px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#4a4a4a] transition"
             >
               Sign Up
@@ -2320,16 +2332,11 @@ function App() {
                   <>
                     <div className="text-[#b0b8c1] text-lg mb-2">Please login to view your event menus</div>
                     <button
-                      onClick={() => setShowLoginModal(true)}
+                      onClick={handleClerkSignIn}
                       className="bg-[#00D4AA] text-[#1a1a1a] px-4 py-2 rounded-[8px] font-semibold hover:bg-[#00B894] transition mt-4"
                     >
                       Login
                     </button>
-                  </>
-                ) : !currentUser.email_verified ? (
-                  <>
-                    <div className="text-[#b0b8c1] text-lg mb-2">Please verify your email</div>
-                    <div className="text-sm text-[#b0b8c1] mb-4">Check your email for a verification link</div>
                   </>
                 ) : (
                   <>
@@ -2447,9 +2454,7 @@ function App() {
             <button
               onClick={() => {
                 if (!currentUser) {
-                  setShowLoginModal(true);
-                } else if (!currentUser.email_verified) {
-                  alert('Please verify your email before creating event menus.');
+                  handleClerkSignIn();
                 } else {
                   setShowCreateEventMenu(true);
                 }
@@ -2885,168 +2890,9 @@ function App() {
         </div>
       )}
 
-      {/* Login Modal */}
-      {showLoginModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#2a2a2a] rounded-[18px] p-6 w-full max-w-md mx-4 border border-[#00D4AA]">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-[#00D4AA]">Login</h2>
-              <button
-                className="text-[#b0b8c1] hover:text-white text-2xl"
-                onClick={() => {
-                  setShowLoginModal(false);
-                  setAuthError(null);
-                  setLoginEmail('');
-                  setLoginPassword('');
-                }}
-              >
-                ×
-              </button>
-            </div>
-            <form onSubmit={handleLogin} className="space-y-4">
-              {authError && (
-                <div className="bg-red-500/20 border border-red-500 rounded-[8px] p-3 text-sm text-red-400">
-                  {authError}
-                </div>
-              )}
-              <div>
-                <label className="block text-sm font-semibold text-white mb-2">Email</label>
-                <input
-                  type="email"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white focus:border-[#00D4AA] focus:outline-none"
-                  placeholder="your@email.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-white mb-2">Password</label>
-                <input
-                  type="password"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white focus:border-[#00D4AA] focus:outline-none"
-                  placeholder="••••••••"
-                />
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  disabled={authLoading}
-                  className="flex-1 bg-[#00D4AA] hover:bg-[#00B894] text-white px-4 py-2 rounded-[8px] font-semibold transition-colors disabled:opacity-50"
-                >
-                  {authLoading ? 'Logging in...' : 'Login'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowLoginModal(false);
-                    setShowRegisterModal(true);
-                    setAuthError(null);
-                  }}
-                  className="flex-1 bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white px-4 py-2 rounded-[8px] font-semibold transition-colors"
-                >
-                  Sign Up
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
-      {/* Register Modal */}
-      {showRegisterModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#2a2a2a] rounded-[18px] p-6 w-full max-w-md mx-4 border border-[#00D4AA]">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-[#00D4AA]">Create Account</h2>
-              <button
-                className="text-[#b0b8c1] hover:text-white text-2xl"
-                onClick={() => {
-                  setShowRegisterModal(false);
-                  setAuthError(null);
-                  setRegisterUsername('');
-                  setRegisterEmail('');
-                  setRegisterPassword('');
-                }}
-              >
-                ×
-              </button>
-            </div>
-            <form onSubmit={handleRegister} className="space-y-4">
-              {authError && (
-                <div className="bg-red-500/20 border border-red-500 rounded-[8px] p-3 text-sm text-red-400">
-                  {authError}
-                </div>
-              )}
-              <div>
-                <label className="block text-sm font-semibold text-white mb-2">Username</label>
-                <input
-                  type="text"
-                  value={registerUsername}
-                  onChange={(e) => setRegisterUsername(e.target.value)}
-                  required
-                  minLength={3}
-                  maxLength={50}
-                  pattern="[a-zA-Z0-9_]+"
-                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white focus:border-[#00D4AA] focus:outline-none"
-                  placeholder="username"
-                />
-                <div className="text-xs text-[#b0b8c1] mt-1">Letters, numbers, and underscores only</div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-white mb-2">Email</label>
-                <input
-                  type="email"
-                  value={registerEmail}
-                  onChange={(e) => setRegisterEmail(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white focus:border-[#00D4AA] focus:outline-none"
-                  placeholder="your@email.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-white mb-2">Password</label>
-                <input
-                  type="password"
-                  value={registerPassword}
-                  onChange={(e) => setRegisterPassword(e.target.value)}
-                  required
-                  minLength={8}
-                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-[8px] text-white focus:border-[#00D4AA] focus:outline-none"
-                  placeholder="••••••••"
-                />
-                <div className="text-xs text-[#b0b8c1] mt-1">At least 8 characters</div>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  disabled={authLoading}
-                  className="flex-1 bg-[#00D4AA] hover:bg-[#00B894] text-white px-4 py-2 rounded-[8px] font-semibold transition-colors disabled:opacity-50"
-                >
-                  {authLoading ? 'Creating...' : 'Sign Up'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRegisterModal(false);
-                    setShowLoginModal(true);
-                    setAuthError(null);
-                  }}
-                  className="flex-1 bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white px-4 py-2 rounded-[8px] font-semibold transition-colors"
-                >
-                  Login
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Verify Email Modal */}
-      {showVerifyEmailModal && (
+      {/* Old Verify Email Modal - Removed (Clerk handles this) */}
+      {false && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-[#2a2a2a] rounded-[18px] p-6 w-full max-w-md mx-4 border border-[#00D4AA]">
             <div className="flex items-center justify-between mb-4">
