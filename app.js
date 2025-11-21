@@ -390,6 +390,7 @@ function App() {
   // Clerk authentication state
   const [clerkLoaded, setClerkLoaded] = useState(false);
   const [clerkUser, setClerkUser] = useState(null);
+  const [clerkError, setClerkError] = useState(null);
   const [showClerkSignIn, setShowClerkSignIn] = useState(false);
   const [showClerkSignUp, setShowClerkSignUp] = useState(false);
 
@@ -431,7 +432,9 @@ function App() {
         }
 
         if (!publishableKey || publishableKey.includes('YOUR_KEY') || !publishableKey.startsWith('pk_')) {
-          console.error('[Clerk] Publishable key not configured or invalid:', publishableKey ? 'key exists but invalid format' : 'key missing');
+          const errorMsg = publishableKey ? 'key exists but invalid format' : 'key missing';
+          console.error('[Clerk] Publishable key not configured or invalid:', errorMsg, 'Key received:', publishableKey ? publishableKey.substring(0, 10) + '...' : 'none');
+          setClerkError('Clerk publishable key not configured. Please check Railway environment variables.');
           setClerkLoaded(true);
           return;
         }
@@ -456,8 +459,24 @@ function App() {
         setClerkLoaded(true);
         
         console.log('[Clerk] Initialization complete. User:', clerkInstance.user ? clerkInstance.user.id : 'not signed in');
+        
+        // Mount Clerk's sign-in/sign-up buttons if user is not signed in
+        if (!clerkInstance.user) {
+          setTimeout(() => {
+            const buttonsContainer = document.getElementById('clerk-auth-buttons');
+            if (buttonsContainer && typeof clerkInstance.mountSignInButton === 'function') {
+              clerkInstance.mountSignInButton('#clerk-auth-buttons', {
+                redirectUrl: window.location.href
+              });
+            } else if (buttonsContainer && typeof clerkInstance.mountSignUpButton === 'function') {
+              // If we can mount buttons, do it
+              // Otherwise, the fallback buttons will show
+            }
+          }, 100);
+        }
       } catch (error) {
         console.error('[Clerk] Failed to initialize Clerk:', error);
+        setClerkError(`Failed to initialize Clerk: ${error.message}`);
         setClerkLoaded(true); // Set loaded even on error to prevent infinite retries
       }
     };
@@ -1175,19 +1194,29 @@ function App() {
             </button>
           </div>
         ) : (
-          <div className="mx-4 mb-4 flex gap-2">
-            <button
-              onClick={handleClerkSignIn}
-              className="flex-1 bg-[#00D4AA] text-[#1a1a1a] px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#00B894] transition"
-            >
-              Login
-            </button>
-            <button
-              onClick={handleClerkSignUp}
-              className="flex-1 bg-[#3a3a3a] text-white px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#4a4a4a] transition"
-            >
-              Sign Up
-            </button>
+          <div className="mx-4 mb-4">
+            {!clerkLoaded ? (
+              <div className="text-xs text-[#b0b8c1] text-center py-2">Loading authentication...</div>
+            ) : clerkError ? (
+              <div className="text-xs text-red-400 text-center py-2">{clerkError}</div>
+            ) : window.clerk ? (
+              <div id="clerk-auth-buttons" className="flex gap-2"></div>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleClerkSignIn}
+                  className="flex-1 bg-[#00D4AA] text-[#1a1a1a] px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#00B894] transition"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={handleClerkSignUp}
+                  className="flex-1 bg-[#3a3a3a] text-white px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#4a4a4a] transition"
+                >
+                  Sign Up
+                </button>
+              </div>
+            )}
           </div>
         )}
         <div 
