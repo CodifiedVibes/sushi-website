@@ -438,10 +438,19 @@ function App() {
           setClerkError('Failed to connect to backend for Clerk config.');
         }
 
+        // Validate publishable key format
         if (!publishableKey || publishableKey.includes('YOUR_KEY') || !publishableKey.startsWith('pk_')) {
           const errorMsg = publishableKey ? 'key exists but invalid format' : 'key missing';
-          console.error('[Clerk] Publishable key not configured or invalid:', errorMsg, 'Key received:', publishableKey ? publishableKey.substring(0, 10) + '...' : 'none');
+          console.error('[Clerk] Publishable key not configured or invalid:', errorMsg, 'Key received:', publishableKey ? publishableKey.substring(0, 20) + '...' : 'none');
           setClerkError('Clerk publishable key not configured. Please check Railway environment variables.');
+          setClerkLoaded(true);
+          return;
+        }
+        
+        // Check if key looks truncated (should be much longer than 50 chars)
+        if (publishableKey.length < 50) {
+          console.error('[Clerk] Publishable key appears truncated. Length:', publishableKey.length, 'Key:', publishableKey);
+          setClerkError(`Clerk publishable key appears incomplete (${publishableKey.length} chars). Please verify CLERK_PUBLISHABLE_KEY in Railway.`);
           setClerkLoaded(true);
           return;
         }
