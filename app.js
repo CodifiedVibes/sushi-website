@@ -502,54 +502,36 @@ function App() {
     return headers;
   };
 
-  // Clerk authentication functions
+  // Clerk authentication functions - redirect to Clerk's hosted pages
   const handleClerkSignIn = () => {
-    console.log('[Clerk] Sign in clicked, clerk available:', !!window.clerk);
-    console.log('[Clerk] Clerk object:', window.clerk);
+    if (!window.clerk) {
+      console.error('[Clerk] Clerk not initialized yet');
+      // Don't show alert, just log - buttons should be disabled until Clerk loads
+      return;
+    }
     
-    if (window.clerk) {
-      // Try different Clerk redirect methods (vanilla JS SDK)
-      const currentUrl = window.location.href;
-      
-      if (typeof window.clerk.redirectToSignIn === 'function') {
-        window.clerk.redirectToSignIn({ redirectUrl: currentUrl });
-      } else if (typeof window.clerk.openSignIn === 'function') {
-        window.clerk.openSignIn();
-      } else if (window.clerk.client) {
-        // Try using the client object
-        window.clerk.client.signIn.redirect({ redirectUrl: currentUrl });
-      } else {
-        // Fallback: redirect to Clerk's hosted sign-in page
-        const publishableKey = window.clerk.publishableKey || '';
-        window.location.href = `https://accounts.clerk.dev/sign-in?redirect_url=${encodeURIComponent(currentUrl)}`;
-      }
+    const currentUrl = window.location.href;
+    // Use Clerk's redirect - this takes user to Clerk's hosted sign-in page
+    if (typeof window.clerk.redirectToSignIn === 'function') {
+      window.clerk.redirectToSignIn({ redirectUrl: currentUrl });
     } else {
-      console.error('[Clerk] Clerk not initialized. Please refresh the page.');
-      alert('Authentication is loading. Please refresh the page and try again.');
+      // Direct redirect fallback
+      window.location.href = `https://accounts.clerk.dev/sign-in?redirect_url=${encodeURIComponent(currentUrl)}`;
     }
   };
 
   const handleClerkSignUp = () => {
-    console.log('[Clerk] Sign up clicked, clerk available:', !!window.clerk);
-    console.log('[Clerk] Clerk object:', window.clerk);
+    if (!window.clerk) {
+      console.error('[Clerk] Clerk not initialized yet');
+      return;
+    }
     
-    if (window.clerk) {
-      const currentUrl = window.location.href;
-      
-      if (typeof window.clerk.redirectToSignUp === 'function') {
-        window.clerk.redirectToSignUp({ redirectUrl: currentUrl });
-      } else if (typeof window.clerk.openSignUp === 'function') {
-        window.clerk.openSignUp();
-      } else if (window.clerk.client) {
-        window.clerk.client.signUp.redirect({ redirectUrl: currentUrl });
-      } else {
-        // Fallback: redirect to Clerk's hosted sign-up page
-        const publishableKey = window.clerk.publishableKey || '';
-        window.location.href = `https://accounts.clerk.dev/sign-up?redirect_url=${encodeURIComponent(currentUrl)}`;
-      }
+    const currentUrl = window.location.href;
+    if (typeof window.clerk.redirectToSignUp === 'function') {
+      window.clerk.redirectToSignUp({ redirectUrl: currentUrl });
     } else {
-      console.error('[Clerk] Clerk not initialized. Please refresh the page.');
-      alert('Authentication is loading. Please refresh the page and try again.');
+      // Direct redirect fallback
+      window.location.href = `https://accounts.clerk.dev/sign-up?redirect_url=${encodeURIComponent(currentUrl)}`;
     }
   };
 
@@ -1200,22 +1182,24 @@ function App() {
             ) : clerkError ? (
               <div className="text-xs text-red-400 text-center py-2">{clerkError}</div>
             ) : window.clerk ? (
-              <div id="clerk-auth-buttons" className="flex gap-2"></div>
-            ) : (
               <div className="flex gap-2">
                 <button
                   onClick={handleClerkSignIn}
-                  className="flex-1 bg-[#00D4AA] text-[#1a1a1a] px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#00B894] transition"
+                  disabled={!window.clerk}
+                  className="flex-1 bg-[#00D4AA] text-[#1a1a1a] px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#00B894] transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Login
                 </button>
                 <button
                   onClick={handleClerkSignUp}
-                  className="flex-1 bg-[#3a3a3a] text-white px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#4a4a4a] transition"
+                  disabled={!window.clerk}
+                  className="flex-1 bg-[#3a3a3a] text-white px-3 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#4a4a4a] transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Sign Up
                 </button>
               </div>
+            ) : (
+              <div className="text-xs text-[#b0b8c1] text-center py-2">Authentication unavailable</div>
             )}
           </div>
         )}
