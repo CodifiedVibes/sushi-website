@@ -486,13 +486,24 @@ function App() {
   // Clerk authentication functions
   const handleClerkSignIn = () => {
     console.log('[Clerk] Sign in clicked, clerk available:', !!window.clerk);
+    console.log('[Clerk] Clerk object:', window.clerk);
+    
     if (window.clerk) {
-      // Use Clerk's redirect to sign-in page (most reliable for vanilla JS)
-      // Clerk will redirect back to current page after sign-in
+      // Try different Clerk redirect methods (vanilla JS SDK)
       const currentUrl = window.location.href;
-      window.clerk.redirectToSignIn({ 
-        redirectUrl: currentUrl 
-      });
+      
+      if (typeof window.clerk.redirectToSignIn === 'function') {
+        window.clerk.redirectToSignIn({ redirectUrl: currentUrl });
+      } else if (typeof window.clerk.openSignIn === 'function') {
+        window.clerk.openSignIn();
+      } else if (window.clerk.client) {
+        // Try using the client object
+        window.clerk.client.signIn.redirect({ redirectUrl: currentUrl });
+      } else {
+        // Fallback: redirect to Clerk's hosted sign-in page
+        const publishableKey = window.clerk.publishableKey || '';
+        window.location.href = `https://accounts.clerk.dev/sign-in?redirect_url=${encodeURIComponent(currentUrl)}`;
+      }
     } else {
       console.error('[Clerk] Clerk not initialized. Please refresh the page.');
       alert('Authentication is loading. Please refresh the page and try again.');
@@ -501,12 +512,22 @@ function App() {
 
   const handleClerkSignUp = () => {
     console.log('[Clerk] Sign up clicked, clerk available:', !!window.clerk);
+    console.log('[Clerk] Clerk object:', window.clerk);
+    
     if (window.clerk) {
-      // Use Clerk's redirect to sign-up page
       const currentUrl = window.location.href;
-      window.clerk.redirectToSignUp({ 
-        redirectUrl: currentUrl 
-      });
+      
+      if (typeof window.clerk.redirectToSignUp === 'function') {
+        window.clerk.redirectToSignUp({ redirectUrl: currentUrl });
+      } else if (typeof window.clerk.openSignUp === 'function') {
+        window.clerk.openSignUp();
+      } else if (window.clerk.client) {
+        window.clerk.client.signUp.redirect({ redirectUrl: currentUrl });
+      } else {
+        // Fallback: redirect to Clerk's hosted sign-up page
+        const publishableKey = window.clerk.publishableKey || '';
+        window.location.href = `https://accounts.clerk.dev/sign-up?redirect_url=${encodeURIComponent(currentUrl)}`;
+      }
     } else {
       console.error('[Clerk] Clerk not initialized. Please refresh the page.');
       alert('Authentication is loading. Please refresh the page and try again.');
